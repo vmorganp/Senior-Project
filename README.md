@@ -5,3 +5,9 @@ Mathias Ham, Morgan Patterson, Adam Turk Senior project for UCM Spring 2020
 
 ### What does it do
 - feed it a picture of some shredded pieces of paper and it will make it back into the original document in a searchable pdf format. 
+
+### How do I develop it
+virtualenv venv
+./venv/bin/activate
+pip3 install -r requirements.txt
+zoop, do yo thing
