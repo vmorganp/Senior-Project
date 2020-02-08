@@ -16,7 +16,10 @@ image = imutils.resize(image, height = 500)
 
 
 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-gray = cv2.GaussianBlur(gray,(5,5),0)
+gray = cv2.GaussianBlur(gray,(15,15),0)
+cv2.imshow("Outline", gray)
+cv2.waitKey(5000)
+
 edged = cv2.Canny(gray, 75, 200)
 
 print("STEP 1: EDGE DETECTION")
@@ -30,5 +33,5 @@ print("Number of contours found =" + str(len(contours)))
 print("Step 2: find Contours of paper")
 cv2.drawContours(image, contours, -1, (0,255,0),2)
 cv2.imshow("Outline", image)
-cv2.waitKey(10000)
+cv2.waitKey(0)
 cv2.destroyAllWindows()
