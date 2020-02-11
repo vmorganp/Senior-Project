@@ -130,4 +130,6 @@ for i,g in enumerate(group_pool_B):
 	g.display()
 group_pool_A[0].display()
 
-cv2.waitKey(50000)
+
+cv2.waitKey(0)
+cv2.destroyAllWindows()
