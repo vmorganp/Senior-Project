@@ -39,7 +39,7 @@ class Group:
 		cv2.drawContours(self.im, self.edges, -1, (0,255,255), 1)
 		cv2.polylines(self.im, [bb], True, (255,0,0), 1)
 		cv2.drawContours(self.im, [box], 0, (0,0,255), 1)
-		cv2.imshow("Group", self.im)
+		cv2.imshow("Final Grouping", self.im)
 
 	def envelope(self, b):
 		#FIXME: use OBB
@@ -86,6 +86,23 @@ cv2.imshow("Edged", edged)
 cv2.waitKey(5000)
 cv2.destroyAllWindows()
 contours, hierarchy = cv2.findContours(edged.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+
+#get convex hulls of each of the contours
+eroded = np.zeros((image.shape[0], image.shape[1]), np.uint8)
+kernel = np.ones((5,5), np.uint8) 
+
+for c in contours:
+	#hull = cv2.convexHull(c, False)
+	hull = c
+	cv2.fillPoly(eroded, pts=[hull], color=(255,))
+  
+
+#img_erosion = cv2.erode(img, kernel, iterations=1) 
+eroded = cv2.dilate(eroded, kernel, iterations=1) 
+eroded = cv2.erode(eroded, kernel, iterations=1) 
+cv2.imshow("filled", eroded)
+
+contours, hierarchy = cv2.findContours(eroded.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
 
 cont = contours;
 #print(type(contours[0]))
