@@ -1,19 +1,19 @@
-from skimage.filters import threshold_local
+
 import numpy as np
 import argparse
 import cv2
 import imutils
-import math
 from Group import Group
 
 original_image = None # make the original image global
 
-#the group pools are used by the worker threads (lists in CPython are 
-#inherently thread-safe because of the GIL)
-#groups in the same pool will never be compared to eachother, 
+
+# the group pools are used by the worker threads (lists in CPython are
+# inherently thread-safe because of the GIL)
+# groups in the same pool will never be compared to eachother,
 # (always compare an A to a B) this way we never need to worry about comparing
-#two groups to each other more than once
-#initially, put all groups in B, and move one to A before starting the workers
+# two groups to each other more than once
+# initially, put all groups in B, and move one to A before starting the workers
 def main():
     print("running")
     ap = argparse.ArgumentParser()
@@ -22,7 +22,6 @@ def main():
     image = get_image(user_args["image"])
     edges = get_edges(image)
     group_pieces(edges)
-
 
 
 def get_image(image_location):
@@ -41,6 +40,9 @@ def create_groups(edges, grayImage):
         group.append(g)
     return group
 
+def compare_and_merge(a, b):
+    for i in range(a.contour):
+        e_a = a.edge(i)
 
 def get_edges(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -99,15 +101,19 @@ def group_pieces(edges):
     #to remove points that aren't near the straight edge
     print("Possible groups ="+str(len(group_pool_B)))
 
-    group_pool_A = [group_pool_B.pop(0)]
-
     #at this point we have our two groups, we can unleash the worker threads on 
     #them and find the matching edges
-    for i,g in enumerate(group_pool_B):
-        g.display()
-        cv2.waitKey(0)
-    group_pool_A[0].display()
 
+    # this is the entire compare and merge loop
+    while group_pool_B:
+        in_hand = group_pool_B.pop(0)
+        for b in group_pool_B:
+            if compare_and_merge(in_hand, b):
+                group_pool_B.insert(0, in_hand)
+
+        group_pool_A.append(in_hand)
+
+    group_pool_A[0].display()
 
     cv2.waitKey(0)
     cv2.destroyAllWindows()
