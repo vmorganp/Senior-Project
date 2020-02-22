@@ -7,36 +7,36 @@ class Group:
     def __init__(self,e,i):
         self.edges=e[:]
         self.im = i
-        self.obb = None
-        self.aabb = np.zeros((2, 2), np.int32)
-        self.aabb[0][0]=self.im.shape[0]
-        self.aabb[0][1]=self.im.shape[1]
+        self.oriented_bounding_box = None
+        self.axis_aligned_bounded_box = np.zeros((2, 2), np.int32)
+        self.axis_aligned_bounded_box[0][0]=self.im.shape[0]
+        self.axis_aligned_bounded_box[0][1]=self.im.shape[1]
     
-        #first, find the aabb for the group of edges
+        #first, find the axis_aligned_bounded_box for the group of edges
         for e in self.edges:
             #x min & max
-            if e[0][0]<self.aabb[0][0]:
-                self.aabb[0][0]=e[0][0]
-            elif e[0][0]>self.aabb[1][0]:
-                self.aabb[1][0]=e[0][0]
+            if e[0][0]<self.axis_aligned_bounded_box[0][0]:
+                self.axis_aligned_bounded_box[0][0]=e[0][0]
+            elif e[0][0]>self.axis_aligned_bounded_box[1][0]:
+                self.axis_aligned_bounded_box[1][0]=e[0][0]
             #y min & max
-            if e[0][1]<self.aabb[0][1]:
-                self.aabb[0][1]=e[0][1]
-            elif e[0][1]>self.aabb[1][1]:
-                self.aabb[1][1]=e[0][1]
+            if e[0][1]<self.axis_aligned_bounded_box[0][1]:
+                self.axis_aligned_bounded_box[0][1]=e[0][1]
+            elif e[0][1]>self.axis_aligned_bounded_box[1][1]:
+                self.axis_aligned_bounded_box[1][1]=e[0][1]
 
-        self.obb = cv2.minAreaRect(self.edges)
+        self.oriented_bounding_box = cv2.minAreaRect(self.edges)
 
     def display(self):
-        box = cv2.boxPoints(self.obb) # cv2.boxPoints(rect) for OpenCV 3.x
+        box = cv2.boxPoints(self.oriented_bounding_box) # cv2.boxPoints(rect) for OpenCV 3.x
         box = np.int0(box)
-        bb = np.zeros((4,2), np.int32)
-        bb[0] = self.aabb[0]
-        bb[1] = (self.aabb[0][0], self.aabb[1][1])
-        bb[2] = self.aabb[1]
-        bb[3] = (self.aabb[1][0], self.aabb[0][1])
+        bounding_box = np.zeros((4,2), np.int32)
+        bounding_box[0] = self.axis_aligned_bounded_box[0]
+        bounding_box[1] = (self.axis_aligned_bounded_box[0][0], self.axis_aligned_bounded_box[1][1])
+        bounding_box[2] = self.axis_aligned_bounded_box[1]
+        bounding_box[3] = (self.axis_aligned_bounded_box[1][0], self.axis_aligned_bounded_box[0][1])
         cv2.drawContours(self.im, self.edges, -1, (0,255,255), 1)
-        cv2.polylines(self.im, [bb], True, (255,0,0), 1)
+        cv2.polylines(self.im, [bounding_box], True, (255,0,0), 1)
         cv2.drawContours(self.im, [box], 0, (0,0,255), 1)
         
         print("BOX: ", box)
@@ -65,8 +65,8 @@ class Group:
         cv2.imshow("Group", self.im)
 
     def envelope(self, b):
-        #FIXME: use OBB
-        return b.aabb[0][0]>=self.aabb[0][0] and b.aabb[0][1]>=self.aabb[0][1] and b.aabb[1][0]<=self.aabb[1][0] and b.aabb[1][1]<=self.aabb[1][1]
+        #FIXME: use oriented_bounding_box
+        return b.axis_aligned_bounded_box[0][0]>=self.axis_aligned_bounded_box[0][0] and b.axis_aligned_bounded_box[0][1]>=self.axis_aligned_bounded_box[0][1] and b.axis_aligned_bounded_box[1][0]<=self.axis_aligned_bounded_box[1][0] and b.axis_aligned_bounded_box[1][1]<=self.axis_aligned_bounded_box[1][1]
 
     def overlap(self, b):
         #overlapping groups should be merged
