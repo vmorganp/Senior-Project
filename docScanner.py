@@ -3,7 +3,7 @@ import numpy as np
 import argparse
 import cv2
 import imutils
-from Group import Group
+from meta import Group
 
 original_image = None # make the original image global
 
@@ -41,7 +41,7 @@ def create_groups(edges, grayImage):
     return group
 
 def compare_and_merge(a, b):
-    for i in range(a.contour):
+    for i in range(len(a.contour)):
         e_a = a.edge(i)
 
 def get_edges(image):
