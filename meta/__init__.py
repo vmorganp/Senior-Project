@@ -10,7 +10,7 @@ class Edge:
         self.pos = pt_a
         vector = pt_b - pt_a
         self.len = linalg.norm(vector)
-        self.vec = np.array([vector[0]/self.len, vector[1]/self.len])
+        self.vec = np.array([vector[0][0]/self.len, vector[0][1]/self.len])
         self.perp = np.array([self.vec[1], self.vec[0]])
 
 
