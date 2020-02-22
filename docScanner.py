@@ -3,10 +3,16 @@ import numpy as np
 import argparse
 import cv2
 import imutils
-from Group import Group
+
+import meta
 
 original_image = None # make the original image global
+work_queue = []
 
+class Work:
+    def __init__(self, a, b):
+        self.a=a
+        self.b=b
 
 # the group pools are used by the worker threads (lists in CPython are
 # inherently thread-safe because of the GIL)
@@ -36,13 +42,34 @@ def get_image(image_location):
 def create_groups(edges, grayImage):
     group = []
     for e in edges:
-        g = Group(e, grayImage)
+        g = meta.Group(grayImage, e)
         group.append(g)
     return group
 
+#O(n*m) yay!
 def compare_and_merge(a, b):
-    for i in range(a.contour):
+    large_edge = None
+    small_edge = None
+    for i in range(len(a.contour)):
         e_a = a.edge(i)
+        for j in range(len(b.contour)):
+            e_b = b.edge(j)
+            if e_a.len >= e_b.len:
+                large_edge = e_a
+                small_edge = e_b
+            else:
+                large_edge = e_b
+                small_edge = e_a
+
+
+def match_edges(long_edge, short_edge):
+    long_start = 0.0
+    for d in range(1000):
+        d_norm = d / 1000.0
+        large_kern = long_edge.get_kernel_at(d)
+        small_kern = short_edge.get_kernel_at(1.0 - d)
+
+
 
 def get_edges(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -97,6 +124,7 @@ def group_pieces(edges):
         if g not in trash:
             group_pool_B.append(g)
 
+    group_pool_A = []
     #TODO: simplify each group further by making the edges "square", using the OBB 
     #to remove points that aren't near the straight edge
     print("Possible groups ="+str(len(group_pool_B)))
@@ -113,7 +141,7 @@ def group_pieces(edges):
 
         group_pool_A.append(in_hand)
 
-    group_pool_A[0].display()
+    group_pool_A[3].display()
 
     cv2.waitKey(0)
     cv2.destroyAllWindows()
