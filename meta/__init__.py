@@ -9,6 +9,7 @@ import imutils
 class Segment:
     def __init__(self, g, pt_a, pt_b):
         self.group = g
+        self.edge = None
         self.pos = pt_a
         vector = pt_b - pt_a
         self.len = linalg.norm(vector)
@@ -28,19 +29,20 @@ class Segment:
 
         return self.group.im[min_y:max_y, min_x:max_x].copy()
 
+    # This does the job, but requires us to rotate the entire image for every
+    # segment...
     def get_aligned_subimage(self):
         theta = math.acos((self.vec[0]*0.0+self.vec[1]*1.0))
         im = imutils.convenience.rotate_bound(self.group.im, -theta)
 
+        min_x = int(self.pos[0][0])
+        max_x = int(self.pos[0][0] + 3)
         if self.vec[1] < 0:
-            min_x = self.pos[0] - 3
-            max_x = self.pos[0]
-        else:
-            min_x = self.pos[0]
-            max_x = self.pos[0] + 3
+            min_x = int(self.pos[0][0] - 3)
+            max_x = int(self.pos[0][0])
 
-        min_y = self.pos[1]
-        max_y = self.pos[1] + self.len
+        min_y = int(self.pos[0][1])
+        max_y = int(self.pos[0][1] + self.len)
 
         return im[min_y:max_y, min_x:max_x].copy()
 
@@ -69,6 +71,7 @@ class Edge:
                 self.cardinal = s
 
     def add_segment(self, s):
+        s.edge = self
         if s.len > self.cardinal.len:
             self.cardinal = s
 
@@ -98,7 +101,7 @@ class Group:
                 self.aabb[1][1] = e[0][1]
 
         #second, use the contour to make segments
-        for idx in len(self.contour):
+        for idx in range(len(self.contour)):
             next_idx = (idx + 1) % len(self.contour)
             s = Segment(self, self.contour[idx], self.contour[next_idx])
             self.segments.append(s)

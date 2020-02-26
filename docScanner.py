@@ -3,17 +3,18 @@ import numpy as np
 import argparse
 import cv2
 import imutils
-from meta import Group
+import skimage.measure
 
 import meta
 
 original_image = None # make the original image global
 work_queue = []
 
-class Work:
+class Task:
     def __init__(self, a, b):
         self.a=a
         self.b=b
+        result = None
 
 # the group pools are used by the worker threads (lists in CPython are
 # inherently thread-safe because of the GIL)
@@ -47,29 +48,38 @@ def create_groups(edges, grayImage):
         group.append(g)
     return group
 
-#O(n*m) yay!
+
+# this has a ridiculous time complexity...
+# uses Structural Similarity Index
 def compare_and_merge(a, b):
-    large_edge = None
-    small_edge = None
-    for i in range(len(a.contour)):
-        e_a = a.edge(i)
-        for j in range(len(b.contour)):
-            e_b = b.edge(j)
-            if e_a.len >= e_b.len:
-                large_edge = e_a
-                small_edge = e_b
+
+    for a_s in a.segments:
+        for b_s in b.segments:
+
+            a_img = a_s.get_aligned_subimage()
+            b_img = b_s.get_aligned_subimage()
+            a_len = int(a_s.len)
+            b_len = int(b_s.len)
+
+            #this is translating a
+            if(a_len < b_len):
+                for i in range(int(b_len-a_len)+1):
+                    (score, diff) = skimage.metrics.structural_similarity(a_img, b_img[i:a_len, 0:b_img.shape[3]],
+                                                             full=True, multichannel=True)
+                    if score > 0.8:  # arbitrary
+                        print("FOUND MATCH")
+                        return a
+                        # return a.merge(b, a_s.theta(b_s), offset)
             else:
-                large_edge = e_b
-                small_edge = e_a
-
-
-def match_edges(long_edge, short_edge):
-    long_start = 0.0
-    for d in range(1000):
-        d_norm = d / 1000.0
-        large_kern = long_edge.get_kernel_at(d)
-        small_kern = short_edge.get_kernel_at(1.0 - d)
-
+                for i in range(int(a_len-b_len)):
+                    (score, diff) = skimage.metrics.structural_similarity(b_img, a_img[i:b_len, 0:a_img.shape[1]],
+                                                             full=True, multichannel=True)
+                    if score > 0.8:  # arbitrary
+                        print("FOUND MATCH")
+                        return a
+                        # return a.merge(b, a_s.theta(b_s), offset)
+    print("no match")
+    return None
 
 
 def get_edges(image):
