@@ -6,6 +6,42 @@ import math
 import imutils
 
 
+def get_edges(image):
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    blurred = cv2.GaussianBlur(gray,(5,5),0)
+    edged = cv2.Canny(blurred, 75, 200)
+
+    # print("STEP 1: EDGE DETECTION")
+    # cv2.imshow("Orig", image)
+    # cv2.imshow("Edged", edged)
+    # cv2.waitKey(5000)
+    # cv2.destroyAllWindows()
+    contours, hierarchy = cv2.findContours(edged.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+
+    #get convex hulls of each of the contours
+    eroded = np.zeros((image.shape[0], image.shape[1]), np.uint8)
+    kernel = np.ones((5,5), np.uint8)
+
+    for c in contours:
+        #hull = cv2.convexHull(c, False)
+        hull = c
+        cv2.fillPoly(eroded, pts=[hull], color=(255,))
+
+    # img_erosion = cv2.erode(img, kernel, iterations=1)
+    eroded = cv2.dilate(eroded, kernel, iterations=1)
+    eroded = cv2.erode(eroded, kernel, iterations=1)
+    cv2.imshow("filled", eroded)
+
+    contours, hierarchy = cv2.findContours(eroded.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+
+    print("Number of contours found =" + str(len(contours)))
+    print("Step 2: find Contours of paper")
+    cv2.drawContours(image, contours, -1, (0,255,0),2)
+    cv2.imshow("Outline", image)
+
+    return contours
+
+
 class Segment:
     def __init__(self, g, pt_a, pt_b):
         self.group = g
@@ -33,18 +69,24 @@ class Segment:
     # segment...
     def get_aligned_subimage(self):
         theta = math.acos((self.vec[0]*0.0+self.vec[1]*1.0))
-        im = imutils.convenience.rotate_bound(self.group.im, -theta)
+        im = imutils.convenience.rotate_bound(self.group.im, math.degrees(-theta))
 
         min_x = int(self.pos[0][0])
-        max_x = int(self.pos[0][0] + 3)
+        max_x = int(self.pos[0][0] + 8)
         if self.vec[1] < 0:
-            min_x = int(self.pos[0][0] - 3)
+            min_x = int(self.pos[0][0] - 8)
             max_x = int(self.pos[0][0])
 
         min_y = int(self.pos[0][1])
-        max_y = int(self.pos[0][1] + self.len)
+        max_y = int(self.pos[0][1] + max(self.len, 3))
 
-        return im[min_y:max_y, min_x:max_x].copy()
+        img = im[min_y:max_y, min_x:max_x].copy()
+        if(img.shape[0]<3):
+            min_y = min_y-1
+        if (img.shape[1] < 3):
+            min_x=min_x-1
+        img = im[min_y:max_y, min_x:max_x].copy()
+        return img
 
     # dot product of two segments
     def dot(self, b):
@@ -145,7 +187,21 @@ class Group:
         return False
 
     def merge(self, b, angle, offset):
-        pass
+        a_img = self.im[self.aabb[0][1]:self.aabb[1][1], self.aabb[0][0]:self.aabb[1][0]].copy()
+        b_img = b.im[b.aabb[0][1]:b.aabb[1][1], b.aabb[0][0]:b.aabb[1][0]].copy()
+        im = imutils.convenience.rotate_bound(b_img, math.degrees(-angle))
+        h1, w1 = a_img.shape[:2]
+        h2, w2 = im.shape[:2]
+
+        # create empty matrix
+        vis = np.zeros((max(h1, h2), w1 + w2, 3), np.uint8)
+
+        print("merge with theta "+str(math.degrees(-angle))+ " and offset "+str(offset))
+
+        # combine 2 images
+        vis[:h1, :w1, :3] = a_img
+        vis[:h2, w1:w1 + w2, :3] = im
+        return Group(vis, get_edges(vis)[0])
 
     def area(self):
         cv2.contourArea(self.contour)

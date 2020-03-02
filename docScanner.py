@@ -28,7 +28,7 @@ def main():
     ap.add_argument("-i", "--image", required = True, help ="Path to the image to be scanned")
     user_args = vars(ap.parse_args())
     image = get_image(user_args["image"])
-    edges = get_edges(image)
+    edges = meta.get_edges(image)
     group_pieces(edges)
 
 
@@ -54,68 +54,53 @@ def create_groups(edges, grayImage):
 def compare_and_merge(a, b):
 
     for a_s in a.segments:
+        a_img = a_s.get_aligned_subimage()
+        a_len = max(int(a_s.len), 3)
+
+        if a_img.shape[0] == 0 or a_img.shape[1] == 0:
+            continue
+
         for b_s in b.segments:
 
-            a_img = a_s.get_aligned_subimage()
             b_img = b_s.get_aligned_subimage()
-            a_len = int(a_s.len)
-            b_len = int(b_s.len)
+            b_len = max(int(b_s.len), 3)
 
-            #this is translating a
-            if(a_len < b_len):
-                for i in range(int(b_len-a_len)+1):
-                    (score, diff) = skimage.metrics.structural_similarity(a_img, b_img[i:a_len, 0:b_img.shape[3]],
-                                                             full=True, multichannel=True)
-                    if score > 0.8:  # arbitrary
-                        print("FOUND MATCH")
-                        return a
-                        # return a.merge(b, a_s.theta(b_s), offset)
-            else:
-                for i in range(int(a_len-b_len)):
-                    (score, diff) = skimage.metrics.structural_similarity(b_img, a_img[i:b_len, 0:a_img.shape[1]],
-                                                             full=True, multichannel=True)
-                    if score > 0.8:  # arbitrary
-                        print("FOUND MATCH")
-                        return a
-                        # return a.merge(b, a_s.theta(b_s), offset)
+            min_x = min(a_img.shape[1], b_img.shape[1])
+
+            if b_img.shape[0] == 0 or b_img.shape[1] == 0:
+                continue
+
+            #print(""+str(a_len)+" ? "+str(b_len))
+
+            try:
+                #this is translating a
+                if(a_len < b_len):
+                    for i in range(int(b_len-a_len)+1):
+                        #print("a trans " + str(a_len) + "," + str(a_img.shape[1]))
+                        #print("" + str(a_img.shape[0]) + "," + str(a_img.shape[1]))
+                        #print("" + str(b_img.shape[0]) + "," + str(b_img.shape[1]))
+                        (score, diff) = skimage.metrics.structural_similarity(a_img[0:a_img.shape[0], 0:min_x], b_img[i:a_len+i, 0:min_x],
+                                                                              win_size=3, full=True, multichannel=True)
+                        if score > 0.8:  # arbitrary
+                            print("FOUND MATCH")
+                            return a.merge(b, a_s.theta(b_s), b_s.pos)
+                else:
+                    for i in range(int(a_len-b_len)):
+                        #print("b trans "+str(i)+","+str(b_len+i)+":0,"+str(a_img.shape[1]))
+                        #print("" + str(a_img.shape[0]) + "," + str(a_img.shape[1]))
+                        #print("" + str(b_img.shape[0]) + "," + str(b_img.shape[1]))
+                        (score, diff) = skimage.metrics.structural_similarity(b_img[0:b_img.shape[0], 0:min_x], a_img[i:b_len+i, 0:min_x],
+                                                                 win_size=3, full=True, multichannel=True)
+                        if score > 0.8:  # arbitrary
+                            print("FOUND MATCH")
+                            return a.merge(b, a_s.theta(b_s), b_s.pos)
+            except ValueError as ve:
+                print(ve);
+                print("" + str(a_img.shape[0]) + "," + str(a_img.shape[1]))
+                print("" + str(b_img.shape[0]) + "," + str(b_img.shape[1]))
     print("no match")
     return None
 
-
-def get_edges(image):
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    blurred = cv2.GaussianBlur(gray,(5,5),0)
-    edged = cv2.Canny(blurred, 75, 200)
-
-    # print("STEP 1: EDGE DETECTION")
-    # cv2.imshow("Orig", image)
-    # cv2.imshow("Edged", edged)
-    # cv2.waitKey(5000)
-    # cv2.destroyAllWindows()
-    contours, hierarchy = cv2.findContours(edged.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-
-    #get convex hulls of each of the contours
-    eroded = np.zeros((image.shape[0], image.shape[1]), np.uint8)
-    kernel = np.ones((5,5), np.uint8) 
-
-    for c in contours:
-        #hull = cv2.convexHull(c, False)
-        hull = c
-        cv2.fillPoly(eroded, pts=[hull], color=(255,))
-
-    # img_erosion = cv2.erode(img, kernel, iterations=1) 
-    eroded = cv2.dilate(eroded, kernel, iterations=1) 
-    eroded = cv2.erode(eroded, kernel, iterations=1) 
-    cv2.imshow("filled", eroded)
-
-    contours, hierarchy = cv2.findContours(eroded.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-
-    print("Number of contours found =" + str(len(contours)))
-    print("Step 2: find Contours of paper")
-    cv2.drawContours(image, contours, -1, (0,255,0),2)
-    cv2.imshow("Outline", image)
-
-    return contours
 
 def group_pieces(edges):
     print("Step 3: Grouping")
@@ -147,12 +132,17 @@ def group_pieces(edges):
     while group_pool_B:
         in_hand = group_pool_B.pop(0)
         for b in group_pool_B:
-            if compare_and_merge(in_hand, b):
-                group_pool_B.insert(0, in_hand)
+            a = compare_and_merge(in_hand, b)   
+            if a is not None:
+                in_hand = a
+                #group_pool_A.insert(0, a)
+                #a.display()
 
         group_pool_A.append(in_hand)
 
-    group_pool_A[3].display()
+    for g in group_pool_A:
+        g.display()
+        cv2.waitKey(0)
 
     cv2.waitKey(0)
     cv2.destroyAllWindows()
