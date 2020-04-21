@@ -22,7 +22,8 @@ class Task:
 # (always compare an A to a B) this way we never need to worry about comparing
 # two groups to each other more than once
 # initially, put all groups in B, and move one to A before starting the workers
-def main():
+def main(event, context):
+    # the arguments are a thing that lamba does, only need the filename from lambda, context is unused
     print("running")
     ap = argparse.ArgumentParser()
     ap.add_argument("-i", "--image", required = True, help ="Path to the image to be scanned")
