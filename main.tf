@@ -68,12 +68,12 @@ resource "aws_iam_policy" "iam_policy_for_repiece_lambda" {
 EOF
 }
 
-data "external" "layer_zipper"
+data "external" "layer_zipper"{
   program =["layer_zipper.sh"]
 }
 
 resource "aws_lambda_layer_version" "dependency_layer" {
-  filname = "repiece_layer.zip"
+  filename = "repiece_layer.zip"
   layer_name = "dependency_layer_repiece_${var.branch}"
   compatible_runtimes = ["${aws_lambda_function.repiece.runtime}"]
   # this is a hack that makes it wait on the layer to be zipped before it tries to deploy the layer
@@ -89,7 +89,7 @@ resource "aws_lambda_layer_version" "dependency_layer" {
 ###############################################################################
 
 # the bucket that's going to hold all of our stuff
-resource "aws_s3_bucket" "website bucket" {
+resource "aws_s3_bucket" "website_bucket" {
   bucket = "repiece_${var.branch}"
   acl    = "public-read-write"
   
@@ -138,7 +138,7 @@ resource "aws_s3_bucket_object" "outputs" {
 
 resource "aws_cloudwatch_event_rule" "capture_s3_updates"{
   name = "repiece_capture_s3_updates_${var.branch}"
-  description = "capture updates to s3 bucket: ${aws_s3_bucket.website_bucket.name} and send to lambda: ${aws_lambda_function.repiece}"
+  description = "capture updates to s3 bucket: ${aws_s3_bucket.website_bucket} and send to lambda: ${aws_lambda_function.repiece}"
   event_pattern = <<PATTERN
 {
   "source": [
@@ -156,7 +156,7 @@ resource "aws_cloudwatch_event_rule" "capture_s3_updates"{
     ],
     "requestParameters": {
       "bucketName": [
-        "${aws_s3_bucket.website_bucket.name}"
+        "${aws_s3_bucket.website_bucket}"
       ]
     }
   }
@@ -175,7 +175,7 @@ resource "aws_lambda_permission" "allow_cloudwatch" {
   action        = "lambda:InvokeFunction"
   function_name =  aws_lambda_function.repiece.function_name
   principal     = "events.amazonaws.com"
-  source_arn    = "arn:aws:events:eu-west-1:573925394054:*"} #TODO scope this better
+  source_arn    = "arn:aws:events:eu-west-1:573925394054:*" #TODO scope this better
 }
 
 
