@@ -1,3 +1,4 @@
+import math
 
 import numpy as np
 import argparse
@@ -43,31 +44,32 @@ def get_image(image_location):
 
 def create_groups(edges, grayImage):
     group = []
-    for e in edges:
+    for i,e in enumerate(edges):
         g = meta.Group(grayImage, e)
+        g.id = str(i)
         group.append(g)
     return group
 
 
 # this has a ridiculous time complexity...
 # uses Structural Similarity Index
-def compare_and_merge(a, b):
+def compare_and_merge_segments(a, b):
 
-    for a_s in a.segments:
+    for a_s in a.segments[:2]:
         a_img = a_s.get_aligned_subimage()
         a_len = max(int(a_s.len), 3)
 
-        if a_img.shape[0] == 0 or a_img.shape[1] == 0:
+        if a_img.shape[0] < 3 or a_img.shape[1] < 3:
             continue
 
-        for b_s in b.segments:
+        for b_s in b.segments[:2]:
 
             b_img = b_s.get_aligned_subimage()
             b_len = max(int(b_s.len), 3)
 
             min_x = min(a_img.shape[1], b_img.shape[1])
 
-            if b_img.shape[0] == 0 or b_img.shape[1] == 0:
+            if b_img.shape[0] < 3 or b_img.shape[1] < 3:
                 continue
 
             #print(""+str(a_len)+" ? "+str(b_len))
@@ -96,11 +98,53 @@ def compare_and_merge(a, b):
                             return a.merge(b, a_s.theta(b_s), b_s.pos)
             except ValueError as ve:
                 print(ve);
-                print("" + str(a_img.shape[0]) + "," + str(a_img.shape[1]))
-                print("" + str(b_img.shape[0]) + "," + str(b_img.shape[1]))
+                print(str(a_len)+" " + str(a_img.shape[0]) + "," + str(a_img.shape[1]))
+                print(str(b_len)+" " + str(b_img.shape[0]) + "," + str(b_img.shape[1]))
     print("no match")
     return None
 
+
+def compare_and_merge_edges(a, b):
+
+    for a_s in a.edges:
+        a_img = a_s.get_aligned_subimage()
+        a_len = max(int(a_img.shape[0]), 3)
+
+        if a_img.shape[0] < 3 or a_img.shape[1] < 3:
+            continue
+
+        for b_s in b.edges:
+            b_img = b_s.get_aligned_subimage()
+            b_len = max(int(b_img.shape[0]), 3)
+
+            min_x = min(a_img.shape[1], b_img.shape[1])
+
+            if b_img.shape[0] < 3 or b_img.shape[1] < 3:
+                continue
+            try:
+                #this is translating a
+                if(a_len <= b_len):
+                    for i in range(int(b_len-a_len)+1):
+                        (score, diff) = skimage.metrics.structural_similarity(a_img[0:a_img.shape[0], 0:min_x], b_img[i:a_len+i, 0:min_x],
+                                                                              win_size=3, full=True, multichannel=True)
+                        if score > 0.8:  # arbitrary
+                            print("FOUND EDGE MATCH A")
+                            a_pos = np.array([a_s.segments[0].pos[0][0]+i, a_s.segments[0].pos[0][1]])
+                            return a.merge(b, math.radians(90+a_s.group.obb[2]), a_pos-b_s.segments[0].pos)
+                else:
+                    for i in range(int(a_len-b_len)):
+                        (score, diff) = skimage.metrics.structural_similarity(b_img[0:b_img.shape[0], 0:min_x], a_img[i:b_len+i, 0:min_x],
+                                                                 win_size=3, full=True, multichannel=True)
+                        if score > 0.8:  # arbitrary
+                            print("FOUND EDGE MATCH B")
+                            a_pos = a_s.segments[0].pos
+                            return a.merge(b, math.radians(90+b_s.group.obb[2]), a_pos - np.array([b_s.segments[0].pos[0][0]+i, b_s.segments[0].pos[0][1]]))
+            except ValueError as ve:
+                print(ve)
+                print(str(a_len)+" " + str(a_img.shape[0]) + "," + str(a_img.shape[1]))
+                print(str(b_len)+" " + str(b_img.shape[0]) + "," + str(b_img.shape[1]))
+    print("no match")
+    return None
 
 def group_pieces(edges):
     print("Step 3: Grouping")
@@ -113,7 +157,7 @@ def group_pieces(edges):
     trash = []
     for i,g in enumerate(group_pool_A):
         for h in group_pool_A[i+1:]:
-            if h not in trash and g.envelope(h):
+            if h not in trash and (g.envelope(h) or h.area()<10000):
                 trash.append(h)
 
     for g in group_pool_A:
@@ -121,24 +165,35 @@ def group_pieces(edges):
             group_pool_B.append(g)
 
     group_pool_A = []
-    #TODO: simplify each group further by making the edges "square", using the OBB 
-    #to remove points that aren't near the straight edge
-    print("Possible groups ="+str(len(group_pool_B)))
+    print("Possible groups = "+str(len(group_pool_B)))
+    for g in group_pool_B:
+        g.display()
 
     #at this point we have our two groups, we can unleash the worker threads on 
     #them and find the matching edges
 
     # this is the entire compare and merge loop
+    in_hand = group_pool_B.pop(0)
     while group_pool_B:
-        in_hand = group_pool_B.pop(0)
+        merged = None
+
         for b in group_pool_B:
-            a = compare_and_merge(in_hand, b)   
+            #a = compare_and_merge_segments(in_hand, b)
+            a = compare_and_merge_edges(in_hand, b)
             if a is not None:
                 in_hand = a
-                #group_pool_A.insert(0, a)
-                #a.display()
+                merged = b
+                break
 
-        group_pool_A.append(in_hand)
+        in_hand.display()
+        cv2.waitKey(0)
+        if merged is not None:
+            group_pool_B.remove(merged)
+        else:
+            group_pool_A.append(in_hand)
+            in_hand = group_pool_B.pop(0)
+
+    group_pool_A.append(in_hand)
 
     for g in group_pool_A:
         g.display()

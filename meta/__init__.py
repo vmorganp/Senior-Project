@@ -3,6 +3,7 @@ import numpy as np
 from numpy import linalg
 import cv2
 import math
+import random
 import imutils
 
 
@@ -30,14 +31,14 @@ def get_edges(image):
     # img_erosion = cv2.erode(img, kernel, iterations=1)
     eroded = cv2.dilate(eroded, kernel, iterations=1)
     eroded = cv2.erode(eroded, kernel, iterations=1)
-    cv2.imshow("filled", eroded)
+    #cv2.imshow("filled", eroded)
 
     contours, hierarchy = cv2.findContours(eroded.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
 
     print("Number of contours found =" + str(len(contours)))
-    print("Step 2: find Contours of paper")
+    #print("Step 2: find Contours of paper")
     cv2.drawContours(image, contours, -1, (0,255,0),2)
-    cv2.imshow("Outline", image)
+    #cv2.imshow("Outline", image)
 
     return contours
 
@@ -50,7 +51,7 @@ class Segment:
         vector = pt_b - pt_a
         self.len = linalg.norm(vector)
         self.vec = np.array([vector[0][0]/self.len, vector[0][1]/self.len])
-        self.perp = np.array([self.vec[1], self.vec[0]])
+        self.perp = np.array([self.vec[1], -self.vec[0]])
 
     def get_kernel_at(self, d):
         # move along the edge vector by d percentage of self.len
@@ -103,6 +104,8 @@ class Edge:
         self.segments = [s]
         self.group = g
         self.cardinal = None # the longest segment on the edge
+        self.aggregate_vec = np.array([0,0])
+        self.len=0
 
         self._find_cardinal()
 
@@ -117,36 +120,91 @@ class Edge:
         if s.len > self.cardinal.len:
             self.cardinal = s
 
+        pt_a = self.segments[0].pos
+        pt_b = self.segments[-1].pos + self.segments[-1].vec * self.segments[-1].len
+
+        vector = pt_b - pt_a
+        self.len = linalg.norm(vector)
+        self.aggregate_vec = np.array([vector[0][0] / self.len, vector[0][1] / self.len])
+
+    def get_aligned_subimage(self):
+
+        # make an overall line for the edge
+        pt_a = self.segments[0].pos
+        pt_b = self.segments[-1].pos+self.segments[-1].vec*self.segments[-1].len
+
+        vector = pt_b - pt_a
+        len = linalg.norm(vector)
+        vec = np.array([vector[0][0]/len, vector[0][1]/len])
+
+        theta = math.acos((vec[0]*0.0+vec[1]*1.0))
+        im = imutils.convenience.rotate_bound(self.group.im, math.degrees(-theta))
+
+        min_x = int(self.segments[0].pos[0][0])
+        max_x = int(self.segments[0].pos[0][0] + 8)
+        if self.segments[0].vec[1] < 0:
+            min_x = int(self.segments[0].pos[0][0] - 8)
+            max_x = int(self.segments[0].pos[0][0])
+
+        min_y = int(self.segments[0].pos[0][1])
+        max_y = int(self.segments[0].pos[0][1] + max(len, 3))
+
+        img = im[min_y:max_y, min_x:max_x].copy()
+        if img.shape[0]<3:
+            min_y = min_y-1
+        if img.shape[1] < 3:
+            min_x = min_x-1
+        img = im[min_y:max_y, min_x:max_x].copy()
+        return img
+
+    # dot product of two edges' aggregate vector
+    def dot(self, b):
+        print(""+str(self.aggregate_vec[0])+"*"+str(b.aggregate_vec[0])+"+"+str(self.aggregate_vec[1])+"*"+str(b.aggregate_vec[1]))
+        return self.aggregate_vec[0]*b.aggregate_vec[0]+self.aggregate_vec[1]*b.aggregate_vec[1]
+
+    # theta is the angle between two segments
+    def theta(self, b):
+        #return math.acos(self.dot(b)/(self.len*b.len))
+        return math.acos(self.dot(b)) #vectors are both normalized, so len isn't needed?
 
 class Group:
-    def __init__(self, i, e):
+    def __init__(self, i, e, bound_is_extents=False):
         self.contour = e[:]
         self.segments = []
         self.edges = []
         self.im = i
         self.obb = cv2.minAreaRect(self.contour)
         self.aabb = np.zeros((2, 2), np.int32)
-        self.aabb[0][0] = self.im.shape[0]
-        self.aabb[0][1] = self.im.shape[1]
+        self.aabb[0][0] = self.im.shape[1]
+        self.aabb[0][1] = self.im.shape[0]
+        self.id = random.randint(1,100000)
 
         # first, find the aabb for the group of edges
-        for e in self.contour:
-            # x min & max
-            if e[0][0] < self.aabb[0][0]:
-                self.aabb[0][0] = e[0][0]
-            elif e[0][0] > self.aabb[1][0]:
-                self.aabb[1][0] = e[0][0]
-            # y min & max
-            if e[0][1] < self.aabb[0][1]:
-                self.aabb[0][1] = e[0][1]
-            elif e[0][1] > self.aabb[1][1]:
-                self.aabb[1][1] = e[0][1]
+        if not bound_is_extents:
+            for e in self.contour:
+                # x min & max
+                if e[0][0] < self.aabb[0][0]:
+                    self.aabb[0][0] = e[0][0]
+                elif e[0][0] > self.aabb[1][0]:
+                    self.aabb[1][0] = e[0][0]
+                # y min & max
+                if e[0][1] < self.aabb[0][1]:
+                    self.aabb[0][1] = e[0][1]
+                elif e[0][1] > self.aabb[1][1]:
+                    self.aabb[1][1] = e[0][1]
+        else:
+            self.aabb[0][0] = 0
+            self.aabb[0][1] = 0
+            self.aabb[1][0] = self.im.shape[1]
+            self.aabb[1][1] = self.im.shape[0]
 
-        #second, use the contour to make segments
+            #second, use the contour to make segments
         for idx in range(len(self.contour)):
             next_idx = (idx + 1) % len(self.contour)
             s = Segment(self, self.contour[idx], self.contour[next_idx])
             self.segments.append(s)
+
+        self.segments = sorted(self.segments, key=lambda x: x.len, reverse=True)
 
         #third, find "edges" of the group
         self.edges.append(Edge(self, self.segments[0]))
@@ -159,7 +217,7 @@ class Group:
                 e = Edge(self, s)
                 self.edges.append(e)
 
-    def display(self):
+    def display(self, name=None):
         box = cv2.boxPoints(self.obb)  # cv2.boxPoints(rect) for OpenCV 3.x
         box = np.int0(box)
         bb = np.zeros((4, 2), np.int32)
@@ -167,15 +225,20 @@ class Group:
         bb[1] = (self.aabb[0][0], self.aabb[1][1])
         bb[2] = self.aabb[1]
         bb[3] = (self.aabb[1][0], self.aabb[0][1])
-        cv2.drawContours(self.im, self.contour, -1, (0, 255, 255), 1)
-        cv2.polylines(self.im, [bb], True, (255, 0, 0), 1)
-        cv2.drawContours(self.im, [box], 0, (0, 0, 255), 1)
+        im = self.im.copy()
+        cv2.drawContours(im, self.contour, -1, (0, 255, 255), 1)
+        cv2.polylines(im, [bb], True, (255, 0, 0), 1)
+        cv2.drawContours(im, [box], 0, (0, 0, 255), 1)
 
-        crop_img = self.im[self.aabb[0][1]:self.aabb[1][1], self.aabb[0][0]:self.aabb[1][0]].copy()
+        #crop_img = im[self.aabb[0][1]:self.aabb[1][1], self.aabb[0][0]:self.aabb[1][0]].copy()
+        #cv2.imshow("Crop "+str(self.id), crop_img)
 
-        cv2.imshow("Crop", crop_img)
-
-        cv2.imshow("Group", self.im)
+        if name is not None:
+            cv2.imshow(name, im)
+            print("display "+name)
+        else:
+            cv2.imshow("Group "+str(self.id), im)
+            print("display "+"Group "+str(self.id))
 
     def envelope(self, b):
         # FIXME: use OBB
@@ -187,24 +250,38 @@ class Group:
         return False
 
     def merge(self, b, angle, offset):
+        oy, ox = offset[0]
         a_img = self.im[self.aabb[0][1]:self.aabb[1][1], self.aabb[0][0]:self.aabb[1][0]].copy()
         b_img = b.im[b.aabb[0][1]:b.aabb[1][1], b.aabb[0][0]:b.aabb[1][0]].copy()
         im = imutils.convenience.rotate_bound(b_img, math.degrees(-angle))
         h1, w1 = a_img.shape[:2]
         h2, w2 = im.shape[:2]
 
-        # create empty matrix
-        vis = np.zeros((max(h1, h2), w1 + w2, 3), np.uint8)
+        ox = int(ox)
+        oy = int(oy)
+        tw = ox+w2+w1
+        th = max(oy+h2,h1)
 
-        print("merge with theta "+str(math.degrees(-angle))+ " and offset "+str(offset))
+        print("merge with theta " + str(math.degrees(-angle)) + " and offset " + str(ox)+","+str(oy))
+        print("a dims "+str(w1)+","+str(h1))
+        print("b dims " + str(w2) + "," + str(h2))
+        print("total dims "+str(tw)+","+str(th))
+
+        # create empty matrix
+        vis = np.zeros((th, tw, 3), np.uint8)
+
+        h2 = min(h1, h2+oy)
+        iy = abs(oy)
 
         # combine 2 images
         vis[:h1, :w1, :3] = a_img
-        vis[:h2, w1:w1 + w2, :3] = im
-        return Group(vis, get_edges(vis)[0])
+        print("merged a")
+        vis[:h2+oy, ox+w1:tw, :3] = im[iy:h2,:w2]
+        print("merged b")
+        return Group(vis, get_edges(vis)[0], True)
 
     def area(self):
-        cv2.contourArea(self.contour)
+        return (self.aabb[1][0] - self.aabb[0][0]) * (self.aabb[1][1] - self.aabb[0][1])
 
 
 __all__ = ["Group", "Edge", "Segment"]
