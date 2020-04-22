@@ -69,7 +69,7 @@ EOF
 }
 
 data "external" "layer_zipper"{
-  program =["layer_zipper.sh"]
+  program =["bash", "layer_zipper.sh"]
 }
 
 resource "aws_lambda_layer_version" "dependency_layer" {
