@@ -20,7 +20,6 @@ provider "aws" {
 
 # the lambda that's actually going to run our stuff
 resource "aws_lambda_function" "repiece" {
-  filename      = "docScanner.py"
   function_name = "repiece-${var.branch}"
   role          = aws_iam_role.iam_role_for_repiece_lambda.arn
   handler       = "docScanner.main"
