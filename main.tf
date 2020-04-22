@@ -24,7 +24,7 @@ resource "aws_lambda_function" "repiece" {
   function_name = "repiece-${var.branch}"
   role          = aws_iam_role.iam_role_for_repiece_lambda.arn
   handler       = "docScanner.main"
-  source_code_hash = filebase64sha256("docscanner.py")
+  source_code_hash = filebase64sha256("docScanner.py")
   runtime = "python3.7"
   memory_size = 128 # this is going to need a bump...I guarantee it
 }
