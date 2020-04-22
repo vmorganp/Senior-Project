@@ -109,21 +109,21 @@ resource "aws_s3_bucket" "website_bucket" {
 }
 
 resource "aws_s3_bucket_object" "webpage" {
-  bucket = aws_s3_bucket.website_bucket
+  bucket = aws_s3_bucket.website_bucket.bucket
   key    = "/index.html"
   source = "index.html"
   etag = filemd5("index.html")
 }
 
 resource "aws_s3_bucket_object" "uploads" {
-  bucket = aws_s3_bucket.website_bucket
+  bucket = aws_s3_bucket.website_bucket.bucket
   key    = "/uploads/test3.jpg"
   source = "testfiles/test3.jpg"
   etag = filemd5("testFiles/test3.jpg")
 }
 
 resource "aws_s3_bucket_object" "outputs" {
-  bucket = aws_s3_bucket.website_bucket
+  bucket = aws_s3_bucket.website_bucket.bucket
   key    = "/outputs/test3.jpg"
   source = "testfiles/test3.jpg"
   etag = filemd5("testFiles/test3.jpg")
@@ -138,7 +138,7 @@ resource "aws_s3_bucket_object" "outputs" {
 
 resource "aws_cloudwatch_event_rule" "capture_s3_updates"{
   name = "repiece_capture_s3_updates_${var.branch}"
-  description = "capture updates to s3 bucket: ${aws_s3_bucket.website_bucket} and send to lambda: ${aws_lambda_function.repiece}"
+  description = "capture updates to ${aws_s3_bucket.website_bucket.bucket} and send to ${aws_lambda_function.repiece.name}"
   event_pattern = <<PATTERN
 {
   "source": [
@@ -156,7 +156,7 @@ resource "aws_cloudwatch_event_rule" "capture_s3_updates"{
     ],
     "requestParameters": {
       "bucketName": [
-        "${aws_s3_bucket.website_bucket}"
+        "${aws_s3_bucket.website_bucket.bucket}"
       ]
     }
   }
