@@ -119,14 +119,14 @@ resource "aws_s3_bucket_object" "uploads" {
   bucket = aws_s3_bucket.website_bucket
   key    = "/uploads/test3.jpg"
   source = "testfiles/test3.jpg"
-  etag = filemd5("/testFiles/test3.jpg")
+  etag = filemd5("testFiles/test3.jpg")
 }
 
 resource "aws_s3_bucket_object" "outputs" {
   bucket = aws_s3_bucket.website_bucket
   key    = "/outputs/test3.jpg"
   source = "testfiles/test3.jpg"
-  etag = filemd5("/testFiles/test3.jpg")
+  etag = filemd5("testFiles/test3.jpg")
 }
 
 
