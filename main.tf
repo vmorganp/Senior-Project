@@ -90,7 +90,7 @@ resource "aws_lambda_layer_version" "dependency_layer" {
 
 # the bucket that's going to hold all of our stuff
 resource "aws_s3_bucket" "website_bucket" {
-  bucket = "repiece_${var.branch}"
+  bucket = "repiece-${var.branch}"
   acl    = "public-read-write"
   
   cors_rule {
