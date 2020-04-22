@@ -138,7 +138,7 @@ resource "aws_s3_bucket_object" "outputs" {
 
 resource "aws_cloudwatch_event_rule" "capture_s3_updates"{
   name = "repiece_capture_s3_updates_${var.branch}"
-  description = "capture updates to ${aws_s3_bucket.website_bucket.bucket} and send to ${aws_lambda_function.repiece}"
+  description = "capture updates to ${aws_s3_bucket.website_bucket.bucket} and send to ${aws_lambda_function.repiece.function_name}"
   event_pattern = <<PATTERN
 {
   "source": [
