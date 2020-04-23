@@ -3,7 +3,9 @@ name: terraform deploy
 on:
   push:
     branches: [ infrastructureAsCode ]
-
+  pull_request:
+    branches: [ master ]
+    
 jobs:
   build:
     runs-on: ubuntu-latest
