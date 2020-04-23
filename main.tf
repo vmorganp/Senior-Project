@@ -86,7 +86,7 @@ EOF
 # }
 
 resource "aws_lambda_layer_version" "dependency_layer" {
-  filename = "repiece_layer.zip"
+  filename = "layer.zip"
   layer_name = "dependency_layer_repiece_${var.branch}"
   compatible_runtimes = ["${aws_lambda_function.repiece.runtime}"]
   # this is a hack that makes it wait on the layer to be zipped before it tries to deploy the layer
@@ -131,14 +131,14 @@ resource "aws_s3_bucket_object" "webpage" {
 resource "aws_s3_bucket_object" "uploads" {
   bucket = aws_s3_bucket.website_bucket.bucket
   key    = "/uploads/test3.jpg"
-  source = "testfiles/test3.jpg"
+  source = "testFiles/test3.jpg"
   etag = filemd5("testFiles/test3.jpg")
 }
 
 resource "aws_s3_bucket_object" "outputs" {
   bucket = aws_s3_bucket.website_bucket.bucket
   key    = "/outputs/test3.jpg"
-  source = "testfiles/test3.jpg"
+  source = "testFiles/test3.jpg"
   etag = filemd5("testFiles/test3.jpg")
 }
 
