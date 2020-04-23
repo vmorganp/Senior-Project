@@ -135,10 +135,13 @@ resource "aws_s3_bucket" "website_bucket" {
           "Sid": "123",
           "Effect": "Allow",
           "Principal": {
-              "AWS": "573925394054"
+              "AWS": "arn:aws:iam::573925394054:root"
           },
           "Action": "s3:*",
-          "Resource": "arn:aws:s3:::repiece-master/*"
+          "Resource": [
+              "arn:aws:s3:::repiece-master",
+              "arn:aws:s3:::repiece-master/*"
+          ]
       }
   ]
 }
