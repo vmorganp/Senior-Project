@@ -130,6 +130,15 @@ resource "aws_s3_bucket" "website_bucket" {
           "Principal": "*",
           "Action": "s3:GetObject",
           "Resource": "arn:aws:s3:::repiece-master/index.html"
+      },
+      {
+          "Sid": "123",
+          "Effect": "Allow",
+          "Principal": {
+              "AWS": "573925394054"
+          },
+          "Action": "s3:*",
+          "Resource": "arn:aws:s3:::repiece-master/index.html"
       }
   ]
 }
