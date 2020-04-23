@@ -20,7 +20,7 @@ provider "aws" {
 
 # the lambda that's actually going to run our stuff
 resource "aws_lambda_function" "repiece" {
-  filename      = "docScanner.zip"
+  filename      = data.external.function_zipper.name
   function_name = "repiece-${var.branch}"
   role          = aws_iam_role.iam_role_for_repiece_lambda.arn
   handler       = "docScanner.main"
@@ -30,7 +30,7 @@ resource "aws_lambda_function" "repiece" {
 }
 
 data "external" "function_zipper"{
-  program =["bash", "function_zipper.sh docScanner.zip docscanner.py"]
+  program =["bash", "function_zipper.sh"]
 }
 
 resource "aws_iam_role" "iam_role_for_repiece_lambda" {
