@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 ZIP_PATH=$(pwd)/layer.zip
 
 pip3 install virtualenv
