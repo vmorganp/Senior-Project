@@ -105,19 +105,11 @@ resource "aws_s3_bucket_object" "layer" {
 # the bucket that's going to hold all of our stuff
 resource "aws_s3_bucket" "website_bucket" {
   bucket = "repiece-${var.branch}"
-  acl    = "public-read-write"
+  acl    = "public-read"
   
   cors_rule {
     allowed_headers = ["*"]
     allowed_methods = ["GET", "PUT", "POST"]
-    allowed_origins = ["https://repiece*"]
-    expose_headers  = ["ETag"]
-    max_age_seconds = 3000
-  }
-
-    cors_rule {
-    allowed_headers = ["*"]
-    allowed_methods = ["GET"]
     allowed_origins = ["*"]
     expose_headers  = ["ETag"]
     max_age_seconds = 3000
@@ -127,6 +119,21 @@ resource "aws_s3_bucket" "website_bucket" {
     index_document = "index.html"
   }
 
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Id": "IcanSayWhateverIWantHere",
+  "Statement": [
+      {
+          "Sid": "Stmt1587618241826",
+          "Effect": "Allow",
+          "Principal": "*",
+          "Action": "s3:GetObject",
+          "Resource": "arn:aws:s3:::repiece-master/index.html"
+      }
+  ]
+}
+EOF
 }
 
 resource "aws_s3_bucket_object" "webpage" {
@@ -134,6 +141,7 @@ resource "aws_s3_bucket_object" "webpage" {
   key    = "/index.html"
   source = "index.html"
   etag = filemd5("index.html")
+  content_type = "text/html"
 }
 
 resource "aws_s3_bucket_object" "uploads" {
