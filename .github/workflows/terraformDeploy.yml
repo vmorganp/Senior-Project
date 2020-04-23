@@ -37,7 +37,7 @@ jobs:
         echo $branch 
         export AWS_ACCESS_KEY_ID="${{ secrets.access_key }}"
         export AWS_SECRET_ACCESS_KEY="${{ secrets.secret_key }}"
-        terraform init -no-color --backend-config="bucket=${{ secrets.bucket_location }}" -backend-config="key=${{ secrets.state_location}}"
+        terraform init -no-color --backend-config="bucket=${{ secrets.bucket_location }}" --backend-config="key=${{ secrets.state_location }}"
         
         
         
