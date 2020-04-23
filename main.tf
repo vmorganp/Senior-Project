@@ -20,12 +20,17 @@ provider "aws" {
 
 # the lambda that's actually going to run our stuff
 resource "aws_lambda_function" "repiece" {
+  filename      = "docScanner.zip"
   function_name = "repiece-${var.branch}"
   role          = aws_iam_role.iam_role_for_repiece_lambda.arn
   handler       = "docScanner.main"
   source_code_hash = filebase64sha256("docScanner.py")
   runtime = "python3.7"
   memory_size = 128 # this is going to need a bump...I guarantee it
+}
+
+data "external" "function_zipper"{
+  program =["bash", "function_zipper.sh docScanner.zip docscanner.py"]
 }
 
 resource "aws_iam_role" "iam_role_for_repiece_lambda" {
