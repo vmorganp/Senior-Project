@@ -148,3 +148,5 @@ meta/__pycache__/__init__.cpython-36.pyc
 meta/__pycache__/__init__.cpython-36.pyc
 
 *.zip
+**.exe
+**lock.json
