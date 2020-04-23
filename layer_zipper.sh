@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 ZIP_PATH=$(pwd)/layer.zip
+uname -a 
+pip --version
 
 pip3 install virtualenv
 virtualenv -p python3.7 venv

@@ -20,7 +20,7 @@ provider "aws" {
 
 # the lambda that's actually going to run our stuff
 resource "aws_lambda_function" "repiece" {
-  filename      = data.external.function_zipper.result.name
+  filename      = data.archive_file.zipped_function.output_path
   function_name = "repiece-${var.branch}"
   role          = aws_iam_role.iam_role_for_repiece_lambda.arn
   handler       = "docScanner.main"
@@ -29,8 +29,11 @@ resource "aws_lambda_function" "repiece" {
   memory_size = 128 # this is going to need a bump...I guarantee it
 }
 
-data "external" "function_zipper"{
-  program =["bash", "function_zipper.sh"]
+
+data "archive_file" "zipped_function"{
+  type = "zip"
+  source_file = "docScanner.py"
+  output_path = "docScanner.zip"
 }
 
 resource "aws_iam_role" "iam_role_for_repiece_lambda" {
