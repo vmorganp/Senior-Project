@@ -81,19 +81,20 @@ resource "aws_iam_policy" "iam_policy_for_repiece_lambda" {
 EOF
 }
 
-# data "external" "layer_zipper"{
-#   program =["bash", "layer_zipper.sh"]
-# }
-
 resource "aws_lambda_layer_version" "dependency_layer" {
-  filename = "layer.zip"
   layer_name = "dependency_layer_repiece_${var.branch}"
-  compatible_runtimes = ["${aws_lambda_function.repiece.runtime}"]
+  compatible_runtimes = ["python3.7"]
   # this is a hack that makes it wait on the layer to be zipped before it tries to deploy the layer
-  description = "${"data.external.layer_zipper.result.success"}ly updated the lambda layer for ${var.branch}"
+  description = "layer for repiece ${var.branch} lambda"
+  s3_bucket = aws_s3_bucket_object.layer.bucket
+  s3_key = aws_s3_bucket_object.layer.key
 }
 
-
+resource "aws_s3_bucket_object" "layer" {
+  bucket = aws_s3_bucket.website_bucket.bucket
+  key    = "/deployment/layer.zip"
+  source = "layer.zip"
+}
 
 ###############################################################################
 ###############################################################################
@@ -109,7 +110,15 @@ resource "aws_s3_bucket" "website_bucket" {
   cors_rule {
     allowed_headers = ["*"]
     allowed_methods = ["GET", "PUT", "POST"]
-    allowed_origins = ["https://repiece_${var.branch}"]
+    allowed_origins = ["https://repiece*"]
+    expose_headers  = ["ETag"]
+    max_age_seconds = 3000
+  }
+
+    cors_rule {
+    allowed_headers = ["*"]
+    allowed_methods = ["GET"]
+    allowed_origins = ["*"]
     expose_headers  = ["ETag"]
     max_age_seconds = 3000
   }
@@ -118,7 +127,6 @@ resource "aws_s3_bucket" "website_bucket" {
     index_document = "index.html"
   }
 
-  # policy = #not sure what goes here just yet
 }
 
 resource "aws_s3_bucket_object" "webpage" {
