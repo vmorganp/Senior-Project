@@ -10,4 +10,3 @@ Mathias Ham, Morgan Patterson, Adam Turk Senior project for UCM Spring 2020
 virtualenv venv
 ./venv/bin/activate
 pip3 install -r requirements.txt
-zoop, do yo thing
