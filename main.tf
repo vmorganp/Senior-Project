@@ -92,7 +92,7 @@ resource "aws_lambda_layer_version" "dependency_layer" {
 
 resource "aws_s3_bucket_object" "layer" {
   bucket = aws_s3_bucket.website_bucket.bucket
-  key    = "/deployment/layer.zip"
+  key    = "deployment/layer.zip"
   source = "layer.zip"
 }
 

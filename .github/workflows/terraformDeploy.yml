@@ -44,5 +44,4 @@ jobs:
         export branch=${GITHUB_REF##*/}
         echo $branch 
         terraform init -no-color -backend-config="bucket=${{ secrets.bucket_location }}" -backend-config="key=$branch/${{ secrets.state_location }}"
-        terraform plan -no-color -var "branch=$branch"
         terraform apply -no-color -auto-approve -var "branch=$branch"
