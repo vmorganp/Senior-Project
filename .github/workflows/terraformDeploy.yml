@@ -48,7 +48,6 @@ jobs:
         terraform init -no-color -backend-config="bucket=${{ secrets.bucket_location }}" -backend-config="key=${{ secrets.state_location }}"
         
         
-        
 
     # - name: plan it
     #   env:
