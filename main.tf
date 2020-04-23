@@ -138,7 +138,7 @@ resource "aws_s3_bucket" "website_bucket" {
               "AWS": "573925394054"
           },
           "Action": "s3:*",
-          "Resource": "arn:aws:s3:::repiece-master/index.html"
+          "Resource": "arn:aws:s3:::repiece-master/*"
       }
   ]
 }
