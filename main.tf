@@ -11,6 +11,12 @@ provider "aws" {
   region  = "us-east-1"
 }
 
+terraform {
+  backend "s3"{
+    region = "us-east-1"
+  }
+}
+
 
 ###############################################################################
 ###############################################################################
@@ -75,9 +81,9 @@ resource "aws_iam_policy" "iam_policy_for_repiece_lambda" {
 EOF
 }
 
-data "external" "layer_zipper"{
-  program =["bash", "layer_zipper.sh"]
-}
+# data "external" "layer_zipper"{
+#   program =["bash", "layer_zipper.sh"]
+# }
 
 resource "aws_lambda_layer_version" "dependency_layer" {
   filename = "repiece_layer.zip"
