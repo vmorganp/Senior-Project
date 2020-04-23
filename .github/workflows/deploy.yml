@@ -1,33 +1,40 @@
-# This is a basic workflow to help you get started with Actions
+name: terraform deploy
 
-name: CI
-
-# Controls when the action will run. Triggers the workflow on push or pull request
-# events but only for the master branch
 on:
   push:
-    branches: [ master ]
+    branches: [ infrastructureAsCode ]
   pull_request:
     branches: [ master ]
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
   build:
-    # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v2
-
-    # Runs a single command using the runners shell
-    - name: Run a one-line script
-      run: echo Hello, world!
-
-    # Runs a set of commands using the runners shell
-    - name: Run a multi-line script
+    - name: setup python
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.7
+    - name: install dependencies
       run: |
-        echo Add other actions to build,
-        echo test, and deploy your project.
+        python -m pip install --upgrade pip
+        pip install virtualenv
+        virtualenv -p python3.7 venv
+        . ./venv/bin/activate
+        mkdir python
+        pip3 install -r requirements.txt -t ./python/
+        mv meta/* ./python/
+        zip -r layer.zip ./python > /dev/null
+    - name: plan it
+      env:
+        AWS_ACCESS_KEY_ID: {{ secrets.access_key }}
+        AWS_SECRET_ACCESS_KEY: {{ secrets.secret_key }}
+
+      run: |
+        echo $branch 
+        terraform init -no-color --backend-config="bucket=${{ secrets.bucket_location }}" -backend-config="key=${{ secrets.state_location}}"
+        
+        
+# ${GITHUB_REF##*/}
+# terraform apply -no-color -auto-approve -var
