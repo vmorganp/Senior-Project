@@ -40,8 +40,8 @@ jobs:
 
     - name: plan it
       env:
-        AWS_ACCESS_KEY_ID: {{ secrets.access_key }}
-        AWS_SECRET_ACCESS_KEY: {{ secrets.secret_key }}
+        AWS_ACCESS_KEY_ID: ${{ secrets.access_key }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.secret_key }}
       run: |
         export branch=${GITHUB_REF##*/}
         echo $branch 
