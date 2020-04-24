@@ -1,15 +1,16 @@
 # The main python file, run from the commandline
 import argparse
+
 import cv2
 import numpy as np
-import imutils
-import skimage
+import skimage.measure
 import meta
 
 work_pool = []
 finish_pool = []
 
-def get_edges(image):
+
+def get_edgess(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     blurred = cv2.GaussianBlur(gray,(5,5),0)
     edged = cv2.Canny(blurred, 75, 200)
@@ -39,7 +40,7 @@ def get_edges(image):
 
     print("Number of contours found =" + str(len(contours)))
     print("Step 2: find Contours of paper")
-    cv2.drawContours(image, contours, -1, (0,255,0),2)
+    # cv2.drawContours(image, contours, -1, (0,255,0),2)
     #cv2.imshow("Outline", image)
 
     return contours
@@ -68,22 +69,24 @@ def fill_work_pool(groups):
             work_pool.append(g)
 
 def compare_and_merge(a, b):
-    a_p = imutils.convenience.rotate_bound(a.im, 90 + a.obb[2])
-    b_p = imutils.convenience.rotate_bound(b.im, 90 + b.obb[2])
 
-    a_p = a_p[int(a.obb[0][0]):int(a.obb[1][0]), int(a.obb[0][0]):int(a.obb[1][0])].copy()
-    b_p = b_p[int(b.obb[0][0]):int(b.obb[1][0]), int(b.obb[0][0]):int(b.obb[1][0])].copy()
+    #test slice width
+    test_width=5
 
-    if a_p.shape[0] < 3 or a_p.shape[1] < 3 or b_p.shape[0] < 3 or b_p.shape[1]:
+    a_p = a.get_obb_subimage()
+    b_p = b.get_obb_subimage()
+
+    if a_p.shape[0] < 3 or a_p.shape[1] < 3 or b_p.shape[0] < 3 or b_p.shape[1] < 3:
         return None
 
-    cv2.imshow(a.id + "'", a_p)
-    cv2.imshow(b.id + "'", b_p)
-    cv2.waitKey(0)
+    #cv2.imshow(a.id + "'", a_p)
+    #cv2.imshow(b.id + "'", b_p)
+    #cv2.waitKey(0)
 
     a_len = int(a_p.shape[0])
     b_len = int(b_p.shape[0])
     min_len = min(a_len, b_len)
+    idiff = 0
 
     sml_img = None
     big_img = None
@@ -94,35 +97,47 @@ def compare_and_merge(a, b):
         if a_len <= b_len:
             sml_img, sml_grp = (a_p, a)
             big_img, big_grp = (b_p, b)
+            idiff = b_len - a_len
         else:
             sml_img, sml_grp = (b_p, b)
             big_img, big_grp = (a_p, a)
+            idiff = a_len - b_len
 
-        for i in range(min_len + 1):
+        for i in range(idiff + 1):
             # small image on left, large on right
-            (score, diff) = skimage.metrics.structural_similarity(sml_img[0:sml_img.shape[0], sml_img.shape[1] - 3:sml_img.shape[1]],
-                                                                  big_img[i:min_len + i, 0:3],
-                                                                  win_size=3, full=True, multichannel=True)
-            if score > 0.8:  # arbitrary
-                print("FOUND EDGE MATCH SMALL/LARGE")
+            (score, diff) = skimage.metrics.structural_similarity(
+                sml_img[0:sml_img.shape[0], sml_img.shape[1] - test_width:sml_img.shape[1]],
+                big_img[i:min_len + i, 0:test_width],
+                win_size=3, full=True, multichannel=True)
+
+            if score > 0.2:  # arbitrary
+                print("FOUND EDGE MATCH SMALL/LARGE ("+sml_grp.id+"+"+big_grp.id+")")
                 a_pos = np.array([i, 0])
-                return a.merge(b, 0.0, a_pos)
+                return sml_grp.merge(big_grp, 0.0, [a_pos])
 
             # small image on right, large on left
+            (score, diff) = skimage.metrics.structural_similarity(
+                sml_img[0:sml_img.shape[0], 0:test_width],
+                big_img[i:min_len + i, big_img.shape[1] - test_width:big_img.shape[1]],
+                win_size=3, full=True, multichannel=True)
 
+            if score > 0.2:  # arbitrary
+                print("FOUND EDGE MATCH LARGE/SMALL ("+big_grp.id+"+"+sml_grp.id+")")
+                a_pos = np.array([i, 0])
+                return big_grp.merge(sml_grp, 0.0, [a_pos])
 
     except ValueError as ve:
         print(ve)
-        print(str(a_len)+" " + str(a_p.shape[0]) + "," + str(a_p.shape[1]))
-        print(str(b_len)+" " + str(b_p.shape[0]) + "," + str(b_p.shape[1]))
-    print("no match")
+        print(str(a_len)+" " + str(sml_img.shape[0]) + "," + str(sml_img.shape[1]))
+        print(str(b_len)+" " + str(big_img.shape[0]) + "," + str(big_img.shape[1]))
+    print(a.id+"+"+b.id+" = no match")
     return None
 
 # Pre-cuts an image and adds it to the processing pool
 def add_image(img):
     image = cv2.imread(img)
 
-    contours = get_edges(image)
+    contours = meta.get_edges(image)
 
     g = create_groups(contours, image)
 
@@ -155,6 +170,9 @@ if __name__ == "__main__":
 
     process_pool()
 
-    for g in finish_pool:
-        g.display()
-        cv2.waitKey(0)
+    #debugging:
+    #for g in finish_pool:
+    #    g.display()
+    #    cv2.waitKey(0)
+
+    cv2.imwrite("output.png", finish_pool[0].im)

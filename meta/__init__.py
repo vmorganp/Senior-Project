@@ -7,6 +7,13 @@ import random
 import imutils
 
 
+def _rotate_point(p, angle):
+    c, s = np.cos(math.radians(angle)), np.sin(math.radians(angle))
+
+    j = np.array(((c, s), (-s, c)))
+    return np.dot(j, p)
+
+
 def get_edges(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     blurred = cv2.GaussianBlur(gray,(5,5),0)
@@ -37,7 +44,7 @@ def get_edges(image):
 
     print("Number of contours found =" + str(len(contours)))
     #print("Step 2: find Contours of paper")
-    cv2.drawContours(image, contours, -1, (0,255,0),2)
+    #cv2.drawContours(image, contours, -1, (0,255,0),2)
     #cv2.imshow("Outline", image)
 
     return contours
@@ -177,7 +184,7 @@ class Group:
         self.aabb = np.zeros((2, 2), np.int32)
         self.aabb[0][0] = self.im.shape[1]
         self.aabb[0][1] = self.im.shape[0]
-        self.id = random.randint(1,100000)
+        self.id = str(random.randint(1,100000))
 
         # first, find the aabb for the group of edges
         if not bound_is_extents:
@@ -216,6 +223,21 @@ class Group:
             else:
                 e = Edge(self, s)
                 self.edges.append(e)
+
+    def get_obb_subimage(self):
+        box = cv2.boxPoints(self.obb)
+        angle = -(90+self.obb[2])
+        i = imutils.convenience.rotate_bound(self.im, angle)
+
+        p1 = _rotate_point(box[0], self.obb[2])
+        p2 = _rotate_point(box[2], self.obb[2])
+
+        bmin = np.array((min(p1[0], p2[0]), min(p1[1], p2[1])))
+        bmax = np.array((max(p1[0], p2[0]), max(p1[1], p2[1])))
+
+        #return i
+        return i[int(bmin[0]):int(bmax[0]), int(bmin[1]):int(bmax[1])].copy()
+        #return self.im[self.aabb[0][1]:self.aabb[1][1], self.aabb[0][0]:self.aabb[1][0]].copy()
 
     def display(self, name=None):
         box = cv2.boxPoints(self.obb)  # cv2.boxPoints(rect) for OpenCV 3.x
@@ -270,13 +292,12 @@ class Group:
         # create empty matrix
         vis = np.zeros((th, tw, 3), np.uint8)
 
-        h2 = min(h1, h2+oy)
         iy = abs(oy)
 
         # combine 2 images
         vis[:h1, :w1, :3] = a_img
         print("merged a")
-        vis[:h2+oy, ox+w1:tw, :3] = im[iy:h2,:w2]
+        vis[oy:h2+oy, ox+w1:tw, :3] = im[:h2,:w2]
         print("merged b")
         return Group(vis, get_edges(vis)[0], True)
 
