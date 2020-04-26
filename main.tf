@@ -37,8 +37,8 @@ resource "aws_ecs_cluster" "repiece_cluster"{
 resource "aws_ecs_task_definition" "repiece_task_definition"{
   family = "repiece-task-${var.branch}"
   network_mode = "none"
-  task_role_arn = aws_iam_role.iam_policy_for_repiece_container
-  execution_role_arn = aws_iam_role.iam_policy_for_repiece_container
+  task_role_arn = aws_iam_role.iam_role_for_repiece_container
+  execution_role_arn = aws_iam_role.iam_role_for_repiece_container
     container_definitions    = <<DEFINITION
 [{
     "name": "handler",
@@ -254,7 +254,7 @@ DOC
 
 resource "aws_iam_role_policy" "ecs_events_run_task_with_any_role" {
   name = "ecs_events_run_task_with_any_role"
-  role = "${aws_iam_role.ecs_events.id}"
+  role = aws_iam_role.ecs_events.id
 
   policy = <<DOC
 {
