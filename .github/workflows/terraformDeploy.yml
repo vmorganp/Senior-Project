@@ -30,7 +30,7 @@ jobs:
       with:
         aws-access-key-id: ${{ secrets.access_key }}
         aws-secret-access-key: ${{ secrets.secret_key }}
-        aws-region: us-east-2
+        aws-region: us-east-1
 
     # Also required to push a new docker image to ecr
     - name: Login to Amazon ECR
