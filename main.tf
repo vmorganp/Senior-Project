@@ -233,7 +233,7 @@ resource "aws_cloudwatch_event_target" "pass_uploads_to_container" {
   ecs_target {
     task_count          = 1
     task_definition_arn = "${aws_ecs_task_definition.repiece_task_definition.arn}"
-    ecs_target = "FARGATE"
+    launch_type = "FARGATE"
   }
   //TODO maybe need to add overrides in here
 }
