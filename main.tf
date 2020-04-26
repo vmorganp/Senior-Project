@@ -30,16 +30,6 @@ terraform {
 ###############################################################################
 
 # the container that's actually going to run our stuff
-resource "aws_lambda_function" "repiece" {
-  filename      = data.archive_file.zipped_function.output_path
-  function_name = "repiece-${var.branch}"
-  role          = aws_iam_role.iam_role_for_repiece_lambda.arn
-  handler       = "docScanner.main"
-  source_code_hash = filebase64sha256("docScanner.py")
-  runtime = "python3.7"
-  memory_size = 128 # this is going to need a bump...I guarantee it
-}
-
 resource "aws_ecs_cluster" "repiece_cluster"{
   name = "repiece-cluster${var.branch}"
 }
@@ -47,8 +37,8 @@ resource "aws_ecs_cluster" "repiece_cluster"{
 resource "aws_ecs_task_definition" "repiece_task_definition"{
   family = "repiece-task-${var.branch}"
   network_mode = "none"
-  task_role_arn = resource.aws_iam_role.iam_policy_for_repiece_container
-  execution_role_arn = resource.aws_iam_role.iam_policy_for_repiece_container
+  task_role_arn = aws_iam_role.iam_policy_for_repiece_container
+  execution_role_arn = aws_iam_role.iam_policy_for_repiece_container
     container_definitions    = <<DEFINITION
 [{
     "name": "handler",
