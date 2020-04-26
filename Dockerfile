@@ -16,3 +16,4 @@ COPY ./* /home/
 
 # install our python requir.ements
 RUN pip3 install -r /home/requirements.txt
+WORKDIR /home

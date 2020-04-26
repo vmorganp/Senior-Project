@@ -4,6 +4,11 @@ variable "branch" {
   default = "master"
 }
 
+variable "image" { 
+  type = string
+  # must be passed after the ecr push in a prior build step
+}
+
 
 # gotta provide some info on how to use aws
 provider "aws" {
@@ -20,11 +25,11 @@ terraform {
 
 ###############################################################################
 ###############################################################################
-# Lambda function, layer, and iam resources
+# Container code and associated IAM
 ###############################################################################
 ###############################################################################
 
-# the lambda that's actually going to run our stuff
+# the container that's actually going to run our stuff
 resource "aws_lambda_function" "repiece" {
   filename      = data.archive_file.zipped_function.output_path
   function_name = "repiece-${var.branch}"
@@ -35,14 +40,52 @@ resource "aws_lambda_function" "repiece" {
   memory_size = 128 # this is going to need a bump...I guarantee it
 }
 
-
-data "archive_file" "zipped_function"{
-  type = "zip"
-  source_file = "docScanner.py"
-  output_path = "docScanner.zip"
+resource "aws_ecs_cluster" "repiece_cluster"{
+  name = "repiece-cluster${var.branch}"
 }
 
-resource "aws_iam_role" "iam_role_for_repiece_lambda" {
+resource "aws_ecs_task_definition" "repiece_task_definition"{
+  family = "repiece-task-${var.branch}"
+  network_mode = "none"
+  task_role_arn = resource.aws_iam_role.iam_policy_for_repiece_container
+  execution_role_arn = resource.aws_iam_role.iam_policy_for_repiece_container
+    container_definitions    = <<DEFINITION
+[{
+    "name": "handler",
+    "image": "${var.image}",
+    "logConfiguration": { 
+        "logDriver": "awslogs",
+        "options": { 
+            "awslogs-group" : "/ecs/repiece-task-${var.branch}",
+            "awslogs-region": "us-east-1",
+            "awslogs-stream-prefix": "ecs"
+        }
+    },
+    "cpu": 0,
+    "memory": 512,
+    "essential": true,
+    "environment" : [
+        {"name": "payload", "value" : "None"}
+    ],
+    "command": [
+        "/bin/sh",
+        "-c",
+        "python3 /usr/src/app/handler.py"
+    ]
+}]
+DEFINITION
+  requires_compatibilities = ["FARGATE"]
+  memory                   = 512
+  cpu                      = 256
+}
+
+
+
+###############################################################################
+# container iam resources
+###############################################################################
+
+resource "aws_iam_role" "iam_role_for_repiece_container" {
   name = "repiece_${var.branch}_role"
   assume_role_policy = <<EOF
 {
@@ -51,7 +94,7 @@ resource "aws_iam_role" "iam_role_for_repiece_lambda" {
     {
       "Action": "sts:AssumeRole",
       "Principal": {
-        "Service": "lambda.amazonaws.com"
+        "Service": "ecs-tasks.amazonaws.com"
       },
       "Effect": "Allow",
       "Sid": ""
@@ -61,7 +104,7 @@ resource "aws_iam_role" "iam_role_for_repiece_lambda" {
 EOF
 }
 
-resource "aws_iam_policy" "iam_policy_for_repiece_lambda" {
+resource "aws_iam_policy" "iam_policy_for_repiece_container" {
   name        = "repiece_${var.branch}_policy"
   path        = "/"
   description = "the policy used by the repiece lambda for branch ${var.branch}"
@@ -71,7 +114,8 @@ resource "aws_iam_policy" "iam_policy_for_repiece_lambda" {
   "Statement": [
     {
       "Action": [
-        "s3:*"
+        "s3:*",
+        "logs:*"
       ],
       "Effect": "Allow",
       "Resource": "*"
@@ -79,21 +123,6 @@ resource "aws_iam_policy" "iam_policy_for_repiece_lambda" {
   ]
 }
 EOF
-}
-
-resource "aws_lambda_layer_version" "dependency_layer" {
-  layer_name = "dependency_layer_repiece_${var.branch}"
-  compatible_runtimes = ["python3.7"]
-  # this is a hack that makes it wait on the layer to be zipped before it tries to deploy the layer
-  description = "layer for repiece ${var.branch} lambda"
-  s3_bucket = aws_s3_bucket_object.layer.bucket
-  s3_key = aws_s3_bucket_object.layer.key
-}
-
-resource "aws_s3_bucket_object" "layer" {
-  bucket = aws_s3_bucket.website_bucket.bucket
-  key    = "deployment/layer.zip"
-  source = "layer.zip"
 }
 
 ###############################################################################
