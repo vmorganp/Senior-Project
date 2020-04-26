@@ -97,7 +97,7 @@ EOF
 resource "aws_iam_policy" "iam_policy_for_repiece_container" {
   name        = "repiece_${var.branch}_policy"
   path        = "/"
-  description = "the policy used by the repiece lambda for branch ${var.branch}"
+  description = "the policy used by the repiece container for branch ${var.branch}"
   policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -192,13 +192,13 @@ resource "aws_s3_bucket_object" "outputs" {
 
 ###############################################################################
 ###############################################################################
-# The cloudwatch pieces to setup events between the bucket and the lambda
+# The cloudwatch pieces to setup events between the bucket and the ecs task
 ###############################################################################
 ###############################################################################
 
 resource "aws_cloudwatch_event_rule" "capture_s3_updates"{
   name = "repiece_capture_s3_updates_${var.branch}"
-  description = "capture updates to ${aws_s3_bucket.website_bucket.bucket} and send to ${aws_lambda_function.repiece.function_name}"
+  description = "capture updates to ${aws_s3_bucket.website_bucket.bucket} and send to repiece-${var.branch}"
   event_pattern = <<PATTERN
 {
   "source": [
@@ -224,19 +224,55 @@ resource "aws_cloudwatch_event_rule" "capture_s3_updates"{
 PATTERN
 }
 
-resource "aws_cloudwatch_event_target" "pass_uploads_to_lambda" {
+resource "aws_cloudwatch_event_target" "pass_uploads_to_container" {
   rule      = aws_cloudwatch_event_rule.capture_s3_updates.name
-  target_id = "invoke_repiece_${var.branch}_lambda"
-  arn       = aws_lambda_function.repiece.arn
+  target_id = "invoke_repiece_${var.branch}_container"
+  arn       = aws_ecs_cluster.repiece_cluster.arn
+  role_arn  = aws_iam_role.ecs_events.arn
+  // maybe need to add overrides in here
 }
 
-resource "aws_lambda_permission" "allow_cloudwatch" {
-  statement_id  = "Allow_cloudwatch_execute_repiece_${var.branch}"
-  action        = "lambda:InvokeFunction"
-  function_name =  aws_lambda_function.repiece.function_name
-  principal     = "events.amazonaws.com"
-  source_arn    = "arn:aws:events:eu-west-1:573925394054:*" #TODO scope this better
+resource "aws_iam_role" "ecs_events" {
+  name = "ecs_events"
+
+  assume_role_policy = <<DOC
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "",
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "events.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+DOC
 }
 
+resource "aws_iam_role_policy" "ecs_events_run_task_with_any_role" {
+  name = "ecs_events_run_task_with_any_role"
+  role = "${aws_iam_role.ecs_events.id}"
+
+  policy = <<DOC
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": "iam:PassRole",
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "ecs:RunTask",
+            "Resource": "${replace(aws_ecs_task_definition.repiece_task_definition.arn, "/:\\d+$/", ":*")}"
+        }
+    ]
+}
+DOC
+}
 
 // TODO networking? 
