@@ -229,7 +229,13 @@ resource "aws_cloudwatch_event_target" "pass_uploads_to_container" {
   target_id = "invoke_repiece_${var.branch}_container"
   arn       = aws_ecs_cluster.repiece_cluster.arn
   role_arn  = aws_iam_role.ecs_events.arn
-  // maybe need to add overrides in here
+
+  ecs_target {
+    task_count          = 1
+    task_definition_arn = "${aws_ecs_task_definition.repiece_task_definition.arn}"
+    ecs_target = "FARGATE"
+  }
+  //TODO maybe need to add overrides in here
 }
 
 resource "aws_iam_role" "ecs_events" {
