@@ -36,7 +36,7 @@ resource "aws_ecs_cluster" "repiece_cluster"{
 
 resource "aws_ecs_task_definition" "repiece_task_definition"{
   family = "repiece-task-${var.branch}"
-  network_mode = "none"
+  network_mode = "awsvpc"
   task_role_arn = aws_iam_role.iam_role_for_repiece_container.arn
   execution_role_arn = aws_iam_role.iam_role_for_repiece_container.arn
     container_definitions    = <<DEFINITION
@@ -280,5 +280,22 @@ resource "aws_iam_role_policy" "ecs_events_run_task_with_any_role" {
 }
 DOC
 }
+
+
+###############################################################################
+###############################################################################
+# networking
+###############################################################################
+###############################################################################
+
+# resource "aws_vpc" "main"{
+#   cidr_block = "10.0.0.0/24"
+# }
+
+
+# vpc 
+# private subnet
+# security group
+# network acl
 
 // TODO networking? 
