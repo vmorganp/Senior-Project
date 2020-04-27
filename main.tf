@@ -217,6 +217,9 @@ resource "aws_cloudwatch_event_rule" "capture_s3_updates"{
     "requestParameters": {
       "bucketName": [
         "${aws_s3_bucket.website_bucket.bucket}"
+      ],
+      "key": [
+        "uploads/*"
       ]
     }
   }
