@@ -235,7 +235,7 @@ resource "aws_cloudwatch_event_target" "pass_uploads_to_container" {
     task_definition_arn = "${aws_ecs_task_definition.repiece_task_definition.arn}"
     launch_type = "FARGATE"
     network_configuration {
-      subnets = aws_subnet.main.id
+      subnets = [aws_subnet.main.id]
     }
   }
 
