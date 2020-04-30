@@ -246,6 +246,7 @@ resource "aws_cloudwatch_event_target" "pass_uploads_to_container" {
     network_configuration {
       subnets = [aws_subnet.main.id]
       security_groups = [aws_security_group.allow_out.id]
+      assign_public_ip = true
     }
   }
 
@@ -311,7 +312,7 @@ resource "aws_subnet" "main" {
   cidr_block = "10.0.0.0/24"
 
   tags = {
-    Name = "Main"
+    Name = "${var.branch} Main"
   }
 }
 
