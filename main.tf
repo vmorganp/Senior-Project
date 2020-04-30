@@ -46,7 +46,7 @@ resource "aws_ecs_task_definition" "repiece_task_definition"{
     "logConfiguration": { 
         "logDriver": "awslogs",
         "options": { 
-            "awslogs-group" : "/ecs/repiece-task-${var.branch}",
+            "awslogs-group" : "${aws_cloudwatch_log_group.repiece.name}",
             "awslogs-region": "us-east-1",
             "awslogs-stream-prefix": "ecs"
         }
@@ -69,6 +69,11 @@ DEFINITION
   cpu                      = 256
 }
 
+resource "aws_cloudwatch_log_group" "repiece" {
+  name = "repiece-${var.branch}"
+  name_prefix = "ecs"
+  retention_in_days = 7
+}
 
 
 ###############################################################################
