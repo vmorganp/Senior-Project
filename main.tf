@@ -245,6 +245,7 @@ resource "aws_cloudwatch_event_target" "pass_uploads_to_container" {
     launch_type = "FARGATE"
     network_configuration {
       subnets = [aws_subnet.main.id]
+      security_groups = [aws_security_group.allow_out.id]
     }
   }
 
