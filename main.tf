@@ -105,7 +105,8 @@ resource "aws_iam_policy" "iam_policy_for_repiece_container" {
     {
       "Action": [
         "s3:*",
-        "logs:*"
+        "logs:*",
+        "ecr:*"
       ],
       "Effect": "Allow",
       "Resource": "*"
@@ -281,7 +282,7 @@ resource "aws_iam_role_policy" "ecs_events_run_task_with_any_role" {
         {
             "Effect": "Allow",
             "Action": "ecs:RunTask",
-            "Resource": "${replace(aws_ecs_task_definition.repiece_task_definition.arn, "/:\\d+$/", ":*")}"
+            "Resource": "*"
         }
     ]
 }
