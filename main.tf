@@ -244,7 +244,7 @@ resource "aws_cloudwatch_event_target" "pass_uploads_to_container" {
     task_definition_arn = "${aws_ecs_task_definition.repiece_task_definition.arn}"
     launch_type = "FARGATE"
     network_configuration {
-      subnets = [aws_subnet.main.id]
+      # subnets = [aws_subnet.main.id]
       security_groups = [aws_security_group.allow_out.id]
       assign_public_ip = true
     }
@@ -303,17 +303,17 @@ DOC
 ###############################################################################
 ###############################################################################
 
-resource "aws_vpc" "main"{
+resource "aws_default_vpc" "main" {
   tags = {
-    Name = "repiece ${var.branch} subnet"
+    Name = "Default VPC"
   }
-  cidr_block = "10.0.0.0/24"
 }
+
 
 resource "aws_subnet" "main" {
   vpc_id     = "${aws_vpc.main.id}"
   cidr_block = "10.0.0.0/24"
-  map_public_ip_on_launch = true
+  # map_public_ip_on_launch = true
 
   tags = {
     Name = "${var.branch} Main"
@@ -333,10 +333,11 @@ resource "aws_security_group" "allow_out" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
-resource "aws_egress_only_internet_gateway" "example" {
-  vpc_id = "${aws_vpc.main.id}"
 
-  tags = {
-    Name = "main"
-  }
-}
+# resource "aws_egress_only_internet_gateway" "example" {
+#   vpc_id = "${aws_vpc.main.id}"
+
+#   tags = {
+#     Name = "main"
+#   }
+# }
