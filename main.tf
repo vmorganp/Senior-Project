@@ -305,7 +305,7 @@ DOC
 
 resource "aws_vpc" "main"{
   tags = {
-    Name = "repiece {var.branch} subnet"
+    Name = "repiece ${var.branch} subnet"
   }
   cidr_block = "10.0.0.0/24"
 }
@@ -313,6 +313,7 @@ resource "aws_vpc" "main"{
 resource "aws_subnet" "main" {
   vpc_id     = "${aws_vpc.main.id}"
   cidr_block = "10.0.0.0/24"
+  map_public_ip_on_launch = true
 
   tags = {
     Name = "${var.branch} Main"
