@@ -244,7 +244,7 @@ resource "aws_cloudwatch_event_target" "pass_uploads_to_container" {
     task_definition_arn = "${aws_ecs_task_definition.repiece_task_definition.arn}"
     launch_type = "FARGATE"
     network_configuration {
-      # subnets = [aws_subnet.main.id]
+      subnets = [aws_default_subnet.main.id]
       security_groups = [aws_security_group.allow_out.id]
       assign_public_ip = true
     }
@@ -309,16 +309,14 @@ resource "aws_default_vpc" "main" {
   }
 }
 
-
-resource "aws_subnet" "main" {
-  vpc_id     = "${aws_default_vpc.main.id}"
-  cidr_block = "10.0.0.0/24"
-  # map_public_ip_on_launch = true
+resource "aws_default_subnet" "main" {
+  availability_zone = "us-east-1a"
 
   tags = {
     Name = "${var.branch} Main"
   }
 }
+
 
 resource "aws_security_group" "allow_out" {
   name        = "allow_out"
