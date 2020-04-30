@@ -116,6 +116,11 @@ resource "aws_iam_policy" "iam_policy_for_repiece_container" {
 EOF
 }
 
+resource "aws_iam_role_policy_attachment" "ecr_role_policy_attachment" {
+  role       = "${aws_iam_role.iam_role_for_repiece_container.name}"
+  policy_arn = "${aws_iam_policy.iam_policy_for_repiece_container.arn}"
+}
+
 ###############################################################################
 ###############################################################################
 # s3 configuration and testing/force file structure objects
