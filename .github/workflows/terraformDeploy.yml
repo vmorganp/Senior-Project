@@ -58,7 +58,7 @@ jobs:
         version: 0.12.24
 
     # Do the actual terraform plans and applies
-    - name: plan and apply
+    - name: apply
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.access_key }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.secret_key }}
