@@ -314,10 +314,16 @@ resource "aws_subnet" "main" {
   }
 }
 
+resource "aws_security_group" "allow_out" {
+  name        = "allow_out"
+  description = "Allow outbound traffic from contianer"
+  vpc_id      = "${aws_vpc.main.id}"
 
-# vpc 
-# private subnet
-# security group
-# network acl
-
-// TODO networking? 
+  egress {
+    description = "anything out"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
