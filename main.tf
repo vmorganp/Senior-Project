@@ -331,11 +331,3 @@ resource "aws_security_group" "allow_out" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
-
-# resource "aws_egress_only_internet_gateway" "example" {
-#   vpc_id = "${aws_vpc.main.id}"
-
-#   tags = {
-#     Name = "main"
-#   }
-# }
