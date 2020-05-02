@@ -10,7 +10,7 @@
 
 <button type="submit" form="form1" value="Submit">Submit</button>
 
-<script>
+<div id="banner"><img src="" alt="" /></div><script>
 
         function submitFile() {
             var x = document.getElementById("myFile");
@@ -32,12 +32,25 @@
                 }
             }).fail(function (jqXHR, textStatus, error) {
                 // Handle error here
+                var loading = new Image();
+                var banner = new Image();
+
+                var bannerElement = document.getElementById("banner"); // assumes an element with id "banner" contains the banner image - you can get the element however you want.
+                banner.src = "loading.gif";
+                loading.src = "loading.gif";
+                banner.onload = function() {
+                    bannerElement.removeChild(bannerElement.lastChild);
+                    bannerElement.appendChild(banner);
+                };
+                bannerElement.removeChild(bannerElement.lastChild);
+                bannerElement.appendChild(loading);
+
                 var x = document.getElementById("image-file").value;
                 var idx = x.lastIndexOf("\\");
                 x = x.substring(idx+1);
                 console.log(x)
-                alert(x);
-                alert("Fail");
+                //alert(x);
+                //alert("Fail");
 
             });;
         }
