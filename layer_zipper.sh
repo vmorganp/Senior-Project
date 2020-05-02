@@ -2,7 +2,8 @@
 set -e
 ZIP_PATH=$(pwd)/layer.zip
 uname -a 
-pip --version
+curl --silent --show-error --retry 5 https://bootstrap.pypa.io/get-pip.py | python3
+pip3 --version
 
 pip3 install virtualenv
 virtualenv -p python3.7 venv
