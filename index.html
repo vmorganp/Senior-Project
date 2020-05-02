@@ -1,4 +1,62 @@
 <!DOCTYPE html>
 <html>
-    <h1>Hey look it's an index page</h1>
+<head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+</head>
+
+<form enctype="multipart/form-data" action="/testFiles/" method="post" id="form1">
+    <input id="image-file" type="file" />
+</form>
+
+<button type="submit" form="form1" value="Submit">Submit</button>
+
+<div id="banner"><img src="" alt="" /></div><script>
+
+        function submitFile() {
+            var x = document.getElementById("myFile");
+            /*SUMBMIT THE FILE TO THE LAMBDA*/
+            alert(x);
+            //document.getElementById("demo").style.color = "red";
+        }
+
+        function fetchdata(){
+            $.ajax({
+                url: 'tes1t.txt',
+                type: 'post',
+                success: function(data){
+                    // Perform operation on return value
+                    alert(data);
+                },
+                complete:function(data){
+                    setTimeout(fetchdata,5000);
+                }
+            }).fail(function (jqXHR, textStatus, error) {
+                // Handle error here
+                var loading = new Image();
+                var banner = new Image();
+
+                var bannerElement = document.getElementById("banner"); // assumes an element with id "banner" contains the banner image - you can get the element however you want.
+                banner.src = "loading.gif";
+                loading.src = "loading.gif";
+                banner.onload = function() {
+                    bannerElement.removeChild(bannerElement.lastChild);
+                    bannerElement.appendChild(banner);
+                };
+                bannerElement.removeChild(bannerElement.lastChild);
+                bannerElement.appendChild(loading);
+
+                var x = document.getElementById("image-file").value;
+                var idx = x.lastIndexOf("\\");
+                x = x.substring(idx+1);
+                console.log(x)
+                //alert(x);
+                //alert("Fail");
+
+            });;
+        }
+
+        $(document).ready(function(){
+            setTimeout(fetchdata,5000);
+        });
+    </script>
 </html>
