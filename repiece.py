@@ -1,5 +1,6 @@
 # The main python file, run from the commandline
 import argparse
+import os
 
 import cv2
 import numpy as np
@@ -159,20 +160,57 @@ def process_pool():
 
         finish_pool.append(in_hand)
 
-## MAIN ##
-if __name__ == "__main__":
-    ap = argparse.ArgumentParser()
-    ap.add_argument("-i", "--image", required=True, help="Path to the image to be scanned")
-    ap.add_argument("-o", "--output", required=False, help="Filename of output PDF")
 
-    args = vars(ap.parse_args())
-    add_image(args["image"])
+def main():
+    try:
+        file = os.environ['file']
+        s3 = boto3.client('s3')
+        s3.download_file('repiece-master', file, '/home/image.jpg')
+        add_image('/home/image.jpg')
+    except Exception:
+        ap = argparse.ArgumentParser()
+        ap.add_argument("-i", "--image", required=True, help="Path to the image to be scanned")
+        ap.add_argument("-o", "--output", required=False, help="Filename of output PDF")
+        args = vars(ap.parse_args())
+        add_image(args["image"])
+    
 
     process_pool()
 
-    #debugging:
-    #for g in finish_pool:
-    #    g.display()
-    #    cv2.waitKey(0)
+    cv2.imwrite("output.png", finish_pool[0].im)
+
+    try:
+        if os.environ['file']:
+            output_location = os.envion['file'].replace('uploads','outputs')
+            response = s3_client.upload_file('output.png', 'repiece-master', output_location)
+    except Exception as e :
+        if os.environ['file']:
+            print(e)
+
+
+def main():
+    if os.environ.get('file'):
+        file = os.environ['file']
+        s3 = boto3.client('s3')
+        s3.download_file('repiece-master', file, '/home/image.jpg')
+        add_image('/home/image.jpg')
+    else:
+        ap = argparse.ArgumentParser()
+        ap.add_argument("-i", "--image", required=True, help="Path to the image to be scanned")
+        ap.add_argument("-o", "--output", required=False, help="Filename of output PDF")
+        args = vars(ap.parse_args())
+        add_image(args["image"])
+    
+
+    process_pool()
 
     cv2.imwrite("output.png", finish_pool[0].im)
+
+    if os.environ.get('file'):
+        output_location = os.envion['file'].replace('uploads','outputs')
+        s3_client = boto3.client('s3')
+        response = s3_client.upload_file('output.png', 'repiece-master', output_location)
+
+## MAIN ##
+if __name__ == "__main__":
+    main()
