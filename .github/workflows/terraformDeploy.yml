@@ -47,7 +47,7 @@ jobs:
         # Build a docker container and
         # push it to ECR so that it can
         # be deployed to ECS.
-        docker build -t $ECR_REGISTRY/repiece-${GITHUB_REF##*/}:$IMAGE_TAG .
+        docker build -t $ECR_REGISTRY/repiece-${GITHUB_REF##*/}:$IMAGE_TAG code
         docker push $ECR_REGISTRY/repiece-${GITHUB_REF##*/}:$IMAGE_TAG
         echo "::set-output name=image::$ECR_REGISTRY/repiece-${GITHUB_REF##*/}:$IMAGE_TAG"
 
@@ -67,5 +67,5 @@ jobs:
         echo $IMAGE
         export branch=${GITHUB_REF##*/}
         echo $branch 
-        terraform init -no-color -backend-config="bucket=${{ secrets.bucket_location }}" -backend-config="key=$branch/${{ secrets.state_location }}"
-        terraform apply -no-color -auto-approve -var "branch=$branch" -var "image=$IMAGE"
+        terraform init -no-color -backend-config="bucket=${{ secrets.bucket_location }}" -backend-config="key=$branch/${{ secrets.state_location }}" build
+        terraform apply -no-color -auto-approve -var "branch=$branch" -var "image=$IMAGE" build
