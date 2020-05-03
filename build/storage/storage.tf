@@ -92,5 +92,5 @@ resource "aws_s3_bucket_object" "outputs" {
   bucket = aws_s3_bucket.website_bucket.bucket
   key    = "/outputs/test3.jpg"
   source = "../testFiles/test3.jpg"
-  etag   = filemd5(../../testFiles/test3.jpg")
+  etag   = filemd5("../../testFiles/test3.jpg")
 }
