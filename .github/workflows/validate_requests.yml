@@ -54,3 +54,4 @@ jobs:
         echo $branch 
         terraform init -no-color -backend-config="bucket=${{ secrets.bucket_location }}" -backend-config="key=$branch/${{ secrets.state_location }}" build
         terraform plan -no-color -auto-approve -var "branch=$branch" -var "image=$IMAGE" build
+
