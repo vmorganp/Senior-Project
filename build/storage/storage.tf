@@ -76,8 +76,8 @@ EOF
 resource "aws_s3_bucket_object" "webpage" {
   bucket       = aws_s3_bucket.website_bucket.bucket
   key          = "/index.html"
-  source       = "../code/index.html"
-  etag         = filemd5("../code/index.html")
+  source       = "../code/other/index.html"
+  etag         = filemd5("../../code/other/index.html")
   content_type = "text/html"
 }
 
@@ -85,12 +85,12 @@ resource "aws_s3_bucket_object" "uploads" {
   bucket = aws_s3_bucket.website_bucket.bucket
   key    = "/uploads/test3.jpg"
   source = "../testFiles/test3.jpg"
-  etag   = filemd5("../testFiles/test3.jpg")
+  etag   = filemd5("../../testFiles/test3.jpg")
 }
 
 resource "aws_s3_bucket_object" "outputs" {
   bucket = aws_s3_bucket.website_bucket.bucket
   key    = "/outputs/test3.jpg"
   source = "../testFiles/test3.jpg"
-  etag   = filemd5("../testFiles/test3.jpg")
+  etag   = filemd5("../../testFiles/test3.jpg")
 }
