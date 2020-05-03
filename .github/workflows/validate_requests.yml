@@ -34,7 +34,7 @@ jobs:
     - name: Build, tag, and push image to Amazon ECR
       id: build-image
       run: |
-        docker build ./build
+        docker build build
 
     # install terraform so we can use it in the next step
     - name: Install Terraform
@@ -52,5 +52,5 @@ jobs:
         echo $IMAGE
         export branch=${GITHUB_REF##*/}
         echo $branch 
-        terraform init -no-color -backend-config="bucket=${{ secrets.bucket_location }}" -backend-config="key=$branch/${{ secrets.state_location }}" ./build
-        terraform plan -no-color -auto-approve -var "branch=$branch" -var "image=$IMAGE" ./build
+        terraform init -no-color -backend-config="bucket=${{ secrets.bucket_location }}" -backend-config="key=$branch/${{ secrets.state_location }}" build
+        terraform plan -no-color -auto-approve -var "branch=$branch" -var "image=$IMAGE" build
