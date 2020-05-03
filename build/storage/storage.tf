@@ -76,18 +76,18 @@ EOF
 resource "aws_s3_bucket_object" "webpage" {
   bucket       = aws_s3_bucket.website_bucket.bucket
   key          = "/index.html"
-  source       = "../index.html"
+  source = "${path.module}/index.html"
   content_type = "text/html"
 }
 
 resource "aws_s3_bucket_object" "uploads" {
   bucket = aws_s3_bucket.website_bucket.bucket
   key    = "/uploads/test4.jpg"
-  source = "../index.html"
+  source = "${path.module}/index.html"
 }
 
 resource "aws_s3_bucket_object" "outputs" {
   bucket = aws_s3_bucket.website_bucket.bucket
   key    = "/outputs/test3.jpg"
-  source = "../index.html"
+  source = "${path.module}/index.html"
 }
