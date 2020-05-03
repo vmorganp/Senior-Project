@@ -182,7 +182,7 @@ def main():
     cv2.imwrite("output.png", finish_pool[0].im)
 
     if os.environ.get('file'):
-        output_location = os.envion['file'].replace('uploads','outputs')
+        output_location = os.environ['file'].replace('uploads','outputs')
         s3_client = boto3.client('s3')
         response = s3_client.upload_file('output.png', 'repiece-master', output_location)
 
