@@ -12,8 +12,8 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # copy all of our files into home (realistically TODO this should be paired down a bit)
-COPY ./* /home/
+COPY ./* /usr/src
 
 # install our python requir.ements
-RUN pip3 install -r /home/requirements.txt
-WORKDIR /home
+RUN pip3 install -r /usr/src/requirements.txt
+WORKDIR /usr/src
