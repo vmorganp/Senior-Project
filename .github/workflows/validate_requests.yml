@@ -34,7 +34,7 @@ jobs:
     - name: Build, tag, and push image to Amazon ECR
       id: build-image
       run: |
-        docker build build
+        docker build code
 
     # install terraform so we can use it in the next step
     - name: Install Terraform
