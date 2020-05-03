@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Repiece Document Reconstruction</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.668.0.min.js"></script>
+</head>
+<body>
+    <div class="jumbotron text-center" style="margin-bottom:0">
+        <h1>Repiece</h1>
+        <p>putting documents kinda back together since 2020!</p> 
+      </div>
+</body>
+
+<nav class="navbar navbar-inverse">
+    <div class="container-fluid">
+        <div class="navbar-header">
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#myNavbar">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>                        
+        </button>
+        <a class="navbar-brand" href="#">Repiece</a>
+        </div>
+    </div>
+</nav>
+
+
+<div class="container">
+    <div class="row">
+      <div class="col-sm-12">
+        <div id="content">
+            <form enctype="multipart/form-data" method="post" id="form1">
+                <input id="image-file" type="file" />
+            </form>
+        
+            <button onClick="submitFile();">Submit</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
+
+<script>
+
+var KEY_ID = "surely you don't think I'd just leave these keys";
+var SECRET_ACCESS_KEY = "sitting out in github right?";
+AWS.config.update({
+    region: "us-east-1",
+    accessKeyId: KEY_ID,
+    secretAccessKey: SECRET_ACCESS_KEY
+})
+
+var s3 = new AWS.S3({
+  apiVersion: "2006-03-01",
+  params: { Bucket: "repiece-master" }
+});
+
+var today = new Date();
+var date = today.getFullYear() + '-' + (today.getMonth()+1) + '-' + today.getDate() + "-" + today.getHours() + "-" + today.getMinutes() + "-" + today.getSeconds();
+    function submitFile() {
+        var file = document.getElementById("image-file").files[0];
+
+        console.log(file);
+        var upload = new AWS.S3.ManagedUpload({
+            params: { 
+                Bucket: "repiece-master",
+                Key: "uploads/"+date,
+                Body: file
+            }
+        })
+        
+        var promise = upload.promise();
+        promise.then(
+            function(data) { 
+                alert("Successfully uploaded photo, please wait while we process it");
+                poll_for_finish()
+            },
+            function(err){
+                console.log(err)
+                return alert("Something is amiss...: ", err.extractError);
+            }
+        );
+    }
+
+    function poll_for_finish() {
+        document.getElementById("content").innerHTML = ' <img width="180" height="320" src="https://repiece-master.s3.amazonaws.com/outputs/'+date+'" alt="Still Processing, please don\'t exit the page">';
+        setInterval(function(){
+            poll_for_finish() // this will run after every 5 seconds
+        }, 5000);
+    }
+</script>
+</html>
