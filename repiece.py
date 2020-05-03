@@ -3,6 +3,7 @@ import argparse
 import os
 import boto3
 
+
 import cv2
 import numpy as np
 import skimage.measure
