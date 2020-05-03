@@ -30,7 +30,7 @@ on ubuntu:
 3. `virtualenv -p python3.7 venv`
 4. `./venv/bin/activate`
 5. `pip3 install -r build/requirements.txt`
-6. Fix all of our code
+6. Fix all of our code please
 
 ## Todo
 
