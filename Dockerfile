@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y \
     zip \
     python3 \
     python3-pip \
+    libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
 # copy all of our files into home (realistically TODO this should be paired down a bit)
