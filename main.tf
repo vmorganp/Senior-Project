@@ -41,7 +41,7 @@ resource "aws_ecs_task_definition" "repiece_task_definition"{
   execution_role_arn = aws_iam_role.iam_role_for_repiece_container.arn
     container_definitions    = <<DEFINITION
 [{
-    "name": "handler",
+    "name": "repiece",
     "image": "${var.image}",
     "logConfiguration": { 
         "logDriver": "awslogs",
@@ -60,7 +60,7 @@ resource "aws_ecs_task_definition" "repiece_task_definition"{
     "command": [
         "/bin/sh",
         "-c",
-        "python3 /usr/src/app/handler.py"
+        "python3 /usr/src/repiece.py"
     ]
 }]
 DEFINITION
